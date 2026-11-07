@@ -1,0 +1,347 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - link [ref=e11] [cursor=pointer]:
+        - /url: https://www.dpo.gov.la/
+        - img "Deposit Protection Office" [ref=e12]
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - generic [ref=e18]:
+            - generic [ref=e19] [cursor=pointer]: 
+            - text: 
+          - generic [ref=e20]:
+            - text: 
+            - list [ref=e21]:
+              - listitem [ref=e22]:
+                - link "ໜ້າຫຼັກ" [ref=e23] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/
+              - listitem [ref=e24]:
+                - link "ກ່ຽວກັບ ສປງ" [ref=e25] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e26]:
+                - link "ນິຕິກຳ" [ref=e27] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e28]:
+                - link "ຮ່ວມມືສາກົນ" [ref=e29] [cursor=pointer]:
+                  - /url: "#"
+              - listitem [ref=e30]:
+                - link "ຂ່າວສານ" [ref=e31] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/%e0%ba%82%e0%bb%88%e0%ba%b2%e0%ba%a7%e0%ba%aa%e0%ba%b2%e0%ba%99/
+              - listitem [ref=e32]:
+                - link "ຕິດຕໍ່" [ref=e33] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/%e0%ba%95%e0%ba%b4%e0%ba%94%e0%ba%95%e0%bb%8d%e0%bb%88/
+        - generic [ref=e34]:
+          - link [ref=e39]:
+            - /url: "#"
+            - img "lo" [ref=e40]
+            - text: LA
+          - link "ເຊື່ອມຕໍ່" [ref=e42] [cursor=pointer]:
+            - /url: https://www.dpo.gov.la/%e0%bb%80%e0%ba%8a%e0%ba%b7%e0%bb%88%e0%ba%ad%e0%ba%a1%e0%ba%95%e0%bb%8d%e0%bb%88/
+          - link "ຂໍ້ມູນ" [ref=e44] [cursor=pointer]:
+            - /url: https://www.dpo.gov.la/%e0%ba%82%e0%bb%8d%e0%bb%89%e0%ba%a1%e0%ba%b9%e0%ba%99/
+      - text:         
+      - generic [ref=e47]:
+        - link [ref=e51] [cursor=pointer]:
+          - /url: https://www.dpo.gov.la/
+          - img "Deposit Protection Office" [ref=e52]
+        - generic [ref=e54]:
+          - text: 
+          - generic [ref=e55] [cursor=pointer]: 
+          - text:     
+    - generic [ref=e60]:
+      - link "" [ref=e62] [cursor=pointer]:
+        - /url: https://www.dpo.gov.la/
+      - generic [ref=e65]: 
+      - generic [ref=e66]:
+        - link "ຂ່າວສານ":
+          - /url: https://www.dpo.gov.la/%E0%BA%82%E0%BB%88%E0%BA%B2%E0%BA%A7%E0%BA%AA%E0%BA%B2%E0%BA%99/
+    - generic [ref=e68]:
+      - generic [ref=e77]:
+        - generic [ref=e78]:
+          - generic [ref=e80]:
+            - link [ref=e81] [cursor=pointer]:
+              - /url: https://www.dpo.gov.la/dporaw/
+              - img "ປະທານສະພາ ຂຶ້ນຊີ້ແຈງກົດໝາຍ ສປງ" [ref=e82]
+            - generic [ref=e83]:
+              - link [ref=e84] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/dporaw/
+                - heading "ຄະນະຮັບຜິດຊອບຄົ້ນຄວ້າສ້າງກົດໝາຍວ່າດ້ວຍການປົກປ້ອງເງິນຝາກລາຍງານການຄົ້ນຄວ້າຄຳເຫັນຕໍ່ຮ່າງກົດໝາຍ ຕໍ່ກອງປະຊຸມສະພາແຫ່ງຊາດ" [level=3] [ref=e85]
+              - link "29/10/2026" [ref=e88] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/dporaw/
+              - generic [ref=e89]:
+                - text: "ໃນວັນທີ 21 ຕຸລາ 2026 ນີ້, ທ່ານ ສຸລິສັກ ທຳນຸວົງ, ຮອງຜູ້ວ່າການ ທະນາຄານແຫ່ງ ສປປ ລາວ (ທຫລ), ຫົວໜ້າຄະນະຮັບຜິດຊອບຄົ້ນຄວ້າສ້າງກົດໝາຍວ່າດ້ວຍການປົກປ້ອງເງິນຝາກ ໄດ້ຂຶ້ນລາຍງານການຄົ້ນຄວ້າຄຳເຫັນຂອງສະມາຊິກສະພາແຫ່ງຊາດ ຕໍ່ຮ່າງກົດໝາຍວ່າດ້ວຍການປົກປ້ອງເງິນຝາກ ຕໍ່ກອງປະຊຸມສະໄໝສາມັນ ເທື່ອທີ 2 ຂອງສະພາແຫ່ງຊາດຊຸດທີ X ທີ່ໄດ້ມີຄໍາເຫັນໃນວາລະກອງປະຊຸມ ຄັ້ງວັນທີ 19 ຕຸລາ 2026. ທ່ານ ສຸລິສັກ ທຳນຸວົງໄດ້ລາຍງານວ່າ: ບັນດາທ່ານສະມາຊິກສະພາແຫ່ງຊາດ ໄດ້ມີຄຳເຫັນຕໍ່ຮ່າງກົດ ໝາຍວ່າດ້ວຍການປົກປ້ອງເງິນຝາກ ຈໍານວນ 31 ທ່ານ, ຕິດພັນກັບ 29 ມາດຕາ ກວມເອົາ 71 ເນື້ອໃນ ຊຶ່ງຄໍາເຫັນດັ່ງກ່າວໄດ້ສ່ອງແສງໃຫ້ເຫັນບັນຫາ ແລະ ສະພາບຄວາມເປັນຈິງ ໃນການເຄື່ອນໄຫວວຽກງານປົກປ້ອງເງິນຝາກ ໄດ້ເປັນຢ່າງດີ ພ້ອມທັງມີຄວາມເປັນຫ່ວງເປັນໃຍກ່ຽວກັບບາງກົນໄກການຈັດຕັ້ງປະຕິບັດ ທີ່ກຳນົດໄວ້ໃນຮ່າງກົດໝາຍສະບັບນີ້ ຊຶ່ງເຫັນວ່າເປັນຄຳເຫັນທີ່ມີຄວາມໝາຍ, ຄວາມສຳຄັນ..."
+                - link "ອ່ານເພີ່ມເຕີມ" [ref=e90] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/dporaw/
+                  - generic [aria-hidden] [ref=e91]: 
+          - generic [ref=e94]:
+            - link [ref=e95] [cursor=pointer]:
+              - /url: https://www.dpo.gov.la/dpoxdiv/
+              - img "ປະທານຮ່ວມ" [ref=e96]
+            - generic [ref=e97]:
+              - link [ref=e98] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/dpoxdiv/
+                - heading "ສຳນັກງານປົກປ້ອງເງິນ(ສປງ)ຝາກຮ່ວມກັບ ປະກັນໄພເງິນຝາກ ສສ ຫວຽດນາມ(DIV) ຈັດກອງປະຊຸມແລກປ່ຽນບົດຮຽນ ແລະ ທົບທວນວຽກງານວິຊາສະເພາະດ້ານການປົກປ້ອງເງິນຝາກ." [level=3] [ref=e99]
+              - link "27/10/2026" [ref=e102] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/dpoxdiv/
+              - generic [ref=e103]:
+                - text: ໃນວັນທີ 06-07 ຕຸລາ 2026 ທີ່ໂຮງແຮມ ຮໍລິເດອິນ (Holiday Inn) ນະຄອນຫຼວງວຽງຈັນ, ສໍານັກງານປົກປ້ອງເງິນຝາກ (ສປງ) ຮ່ວມກັບ ປະກັນໄພເງິນຝາກຫວຽດນາມ (Deposit Insurance of Vietnam - DIV) ໄດ້ຈັດກອງປະຊຸມແລກປ່ຽນບົດຮຽນກ່ຽວກັບການປົກປ້ອງເງິນຝາກ ໂດຍການໃຫ້ກຽດເປັນປະທານຮ່ວມຂອງ ທ່ານ ນ. ວຽງດາລີ ສຸພານຸວົງ ວ່າການແທນຫົວໜ້າ ສປງ ແລະ ທ່ານ ນ. ຮວ່າງ ທິ ເຟືອງ ແຮງ (Hoang Thi Phuong Hanh) ກໍາມະການສະພາບໍລິຫານ DIV ພ້ອມດ້ວຍການເຂົ້າຮ່ວມຂອງ ຄະນະ ສປງ, ຄະນະພະແນກ ແລະ ວິຊາການ ຂອງທັງສອງພາກສ່ວນ ເຂົ້າຮ່ວມທັງໝົດ ຈໍານວນ 54...
+                - link "ອ່ານເພີ່ມເຕີມ" [ref=e104] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/dpoxdiv/
+                  - generic [aria-hidden] [ref=e105]: 
+          - generic [ref=e108]:
+            - link [ref=e109] [cursor=pointer]:
+              - /url: https://www.dpo.gov.la/anv27year/
+              - img "1. ຮູບປະທານກອງປະຊຸມ" [ref=e110]
+            - generic [ref=e111]:
+              - link [ref=e112] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/anv27year/
+                - heading "ສຳນັກງານປົກປອງເງິນຝາກ (ສປງ) ສະເຫຼີມສະຫຼອງເນື່ອງໃນໂອກາດວັນສ້າງຕັ້ງ ສປງ ຄົບຮອບ 27 ປີ(23 ກັນຍາ 1999 – 23 ກັນຍາ 2026)" [level=3] [ref=e113]
+              - link "13/10/2026" [ref=e116] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/anv27year/
+              - generic [ref=e117]:
+                - text: "ໃນວາລະຂອງພິທີ, ທ່ານ ນ. ວຽງດາລີ ສຸພານຸວົງ ວ່າການແທນຫົວໜ້າສໍານັກງານປົກປ້ອງເງິນຝາກ ໄດ້ຂຶ້ນລາຍງານຫຍໍ້ກ່ຽວກັບຜົນສໍາເລັດການຈັດຕັ້ງປະຕິບັດວຽກງານຂອງ ສປງ ໃນໄລຍະຜ່ານມາ ແລະ ແຜນການໃນຕໍ່ໜ້າ. ຈາກນັ້ນ, ໄດ້ມີພິທີມອບໃບຍ້ອງຍໍໃຫ້ແກ່ບັນດາສະມາຊິກຂອງ ສປງເພື່ອເປັນການສະແດງຄວາມຍ້ອງຍໍຊົມເຊີຍ ຕໍ່ບັນດາສະມາຊິກ ທີ່ມີຜົນງານໃນການປະກອບສ່ວນເຂົ້າໃນການພັດທະນາວຽກງານປົກປ້ອງເງິນຝາກ ໃນໄລຍະຜ່ານມາ ຊຶ່ງປະກອບມີທັງໝົດ: 41 ແຫ່ງ ໃນນີ້ມີທະນາຄານທຸລະກິດ ຈໍານວນ 35 ແຫ່ງ ແລະ ສະຖາບັນການເງິນຈຸລະພາກທີ່ຮັບເງິນຝາກ ຈໍານວນ 06 ແຫ່ງ ຍັງບໍ່ທັນເປັນສະມາຊິກ 16 ແຫ່ງ. ໃນໂອກາດອັນມີຄວາມໝາຍຄວາມສໍາຄັນນີ້, ທ່ານ ສຸລິສັກ ທໍານຸວົງ ຮອງຜູ້ວ່າການທະນາຄານແຫ່ງ ສປປ ລາວ, ປະທານສະພາບໍລິຫານ ສໍານັກງານປົກປ້ອງເງິນຝາກ ໄດ້ໃຫ້ກຽດຂຶ້ນມີຄໍາເຫັນໂອ້ລົມ ແລະ ສະແດງຄວາມຍ້ອງຍໍຊົມເຊີຍຕໍ່ຜົນງານທີ່ ສປງ ທີ່ຍາດມາໄດ້ຕະຫຼອດ 27 ປີ. ທ່ານໄດ້ເນັ້ນໜັກວ່າ ໃນໄລຍະໃໝ່ທີ່ເສດຖະກິດ-ການເງິນ..."
+                - link "ອ່ານເພີ່ມເຕີມ" [ref=e118] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/anv27year/
+                  - generic [aria-hidden] [ref=e119]: 
+          - generic [ref=e122]:
+            - link [ref=e123] [cursor=pointer]:
+              - /url: https://www.dpo.gov.la/kdicglobaltrainingprogram/
+              - img "pic GTP in KDIC 01" [ref=e124]
+            - generic [ref=e125]:
+              - link [ref=e126] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/kdicglobaltrainingprogram/
+                - heading "ສໍານັກງານປົກປ້ອງເງິນຝາກ ເຂົ້າຮ່ວມຝຶກອົບຮົມ KDIC Global Training Program ປະຈໍາປີ 2026" [level=3] [ref=e127]
+              - link "02/10/2026" [ref=e130] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/kdicglobaltrainingprogram/
+              - generic [ref=e131]:
+                - text: "ສໍານັກງານປົກປ້ອງເງິນຝາກ ເຂົ້າຮ່ວມຝຶກອົບຮົມ KDIC Global Training Program ປະຈໍາປີ 2026 ໃນລະຫວ່າງວັນທີ 15-18 ກັນຍາ 2026, ຄະນະຜູ້ແທນຈາກ ສໍານັກງານປົກປ້ອງເງິນຝາກ ນໍາພາໂດຍ ທ່ານວ່າການແທນຫົວໜ້າ ສປງ, ຮອງຫົວໜ້າ ສປງ ແລະ ວິຊາການ ລວມທັງໝົດ 04 ທ່ານ ໄດ້ເຂົ້າຮ່ວມການຝຶກອົບຮົມ KDIC Global Training Program ປະຈໍາປີ 2026 ພາຍໃຕ້ຫົວຂໍ້: “ການແກ້ໄຂບັນຫາ ແລະ ການເກັບກູ້ຊັບສິນ” ພາຍໃຕ້ການເປັນເຈົ້າພາບຂອງ ປະກັນໄພເງິນຝາກເກົາຫຼີ (Korea Deposit Insurance Corporation ຫຼື KDIC) ທີ່ປະເທດ ສ. ເກົາຫຼີ ໂດຍມີຜູ້ຕາງໜ້າຈາກ 26 ປະເທດເຂົ້າຮ່ວມ..."
+                - link "ອ່ານເພີ່ມເຕີມ" [ref=e132] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/kdicglobaltrainingprogram/
+                  - generic [aria-hidden] [ref=e133]: 
+          - generic [ref=e136]:
+            - link [ref=e137] [cursor=pointer]:
+              - /url: https://www.dpo.gov.la/laogoldfestival2026/
+              - img "ທ່ານ ຮອງຜູ້ວ່າປະກອບຄຳຄິດເຫັນ 1" [ref=e138]
+            - generic [ref=e139]:
+              - link [ref=e140] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/laogoldfestival2026/
+                - heading "ສຳນັກງານປົກປ້ອງເງິນຝາກ(ສປງ) ເຂົ້າຮ່ວມງານ”ເທດສະການຄຳລາວ2026″(Lao Gold Festival 2026)" [level=3] [ref=e141]
+              - link "16/09/2026" [ref=e144] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/laogoldfestival2026/
+              - generic [ref=e145]:
+                - text: ໃນວັນທີ 4-6 ກັນຍາ 2026 ທີ່່ຜ່ານມາ, ສໍານັກງານປົກປ້ອງເງິນຝາກ (ສປງ) ໄດ້ເຂົ້າຮ່ວມເປີດບູດວາງສະແດງ ເພື່ອສືບຕໍ່ໂຄສະນາເຜີຍແຜ່ວຽກງານປົກປ້ອງເງິນຝາກ ໃຫ້ກັບພໍ່ແມ່ປະຊາຊົນ, ພໍ່ຄ້າຊາວຂາຍ, ພະນັກງານ-ລັດຖະກອນ, ພະນັກງານຂອງສະຖາບັນການເງິນ, ທະຫານ-ຕໍາຫຼວດ, ນັກທຸລະກິດທັງພາຍໃນ ແລະ ຕ່າງປະເທດ ທີ່ໄດ້ມາຮ່ວມງານ “ເທດສະການຄຳລາວ 2026” (Lao Gold Festival 2026) ທີ່ຫໍປະຊຸມແຫ່ງຊາດ ຫຼັກ 6, ນະຄອນຫຼວງວຽງຈັນ, ພາຍໃຕ້ຫົວຂໍ້ “ມຸ້ງເນັ້ນການເຊື່ອມໂຍງຄວາມຮ່ວມມື ດ້ວຍການສ້າງຄວາມເຊື່ອໝັ້ນ ແລະ ເຕີບໂຕແບບຍືນຍົງຮ່ວມກັນ”. ໃນພິທີເປີດດັ່ງກ່າວ ໄດ້ຮັບກຽດເຂົ້າຮ່ວມຂອງ ພະນະທ່ານ ສອນໄຊ ສີພັນດອນ ນາຍົກລັດຖະມົນຕີ ແຫ່ງ ສປປ ລາວ ເປັນປະທານ, ພ້ອມດ້ວຍບັນດາການນຳພັກ-ລັດ, ຜູ້ຕາງໜ້າບັນດາກະຊວງ, ອົງການຂອງລັດ, ສະຖານທູດ, ອົງການຈັດຕັ້ງສາກົນສະພາການຄ້າ, ສະມາຄົມຄຳ, ສະຖາບັນການເງິນ,...
+                - link "ອ່ານເພີ່ມເຕີມ" [ref=e146] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/laogoldfestival2026/
+                  - generic [aria-hidden] [ref=e147]: 
+        - navigation "ການແບ່ງໜ້າໂພສ" [ref=e150]:
+          - generic [ref=e151]:
+            - generic [ref=e152]: "1"
+            - link "2" [ref=e153] [cursor=pointer]:
+              - /url: https://www.dpo.gov.la/%E0%BA%82%E0%BB%88%E0%BA%B2%E0%BA%A7%E0%BA%AA%E0%BA%B2%E0%BA%99/page/2/
+            - generic [ref=e154]: …
+            - link "29" [ref=e155] [cursor=pointer]:
+              - /url: https://www.dpo.gov.la/%E0%BA%82%E0%BB%88%E0%BA%B2%E0%BA%A7%E0%BA%AA%E0%BA%B2%E0%BA%99/page/29/
+            - link "" [ref=e156] [cursor=pointer]:
+              - /url: https://www.dpo.gov.la/%E0%BA%82%E0%BB%88%E0%BA%B2%E0%BA%A7%E0%BA%AA%E0%BA%B2%E0%BA%99/page/2/
+      - complementary [ref=e158]:
+        - generic [ref=e159]:
+          - search [ref=e161]:
+            - searchbox [ref=e163]
+            - button "ຄົ້ນຫາ" [ref=e164] [cursor=pointer]
+          - generic [ref=e165]:
+            - heading "ຂ່າວສານ ອື່ນໆ" [level=4] [ref=e166]
+            - generic [ref=e168]:
+              - generic [ref=e169]:
+                - link "ຂຶ້ນຊີ້ແຈງກົດໝາຍ ສປງ 150x150 " [ref=e170] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/dporaw/
+                  - img "ຂຶ້ນຊີ້ແຈງກົດໝາຍ ສປງ 150x150" [ref=e171]
+                  - generic [ref=e172]: 
+                - generic [ref=e173]:
+                  - heading [level=3] [ref=e174]:
+                    - link "ຄະນະຮັບຜິດຊອບຄົ້ນຄວ້າສ້າງກົດໝາຍວ່າດ້ວຍການປົກປ້ອງເງິນຝາກລາຍງານການຄົ້ນຄວ້າຄຳເຫັນຕໍ່ຮ່າງກົດໝາຍ ຕໍ່ກອງປະຊຸມສະພາແຫ່ງຊາດ" [ref=e175] [cursor=pointer]:
+                      - /url: https://www.dpo.gov.la/dporaw/
+                  - generic [ref=e177]:
+                    - generic [aria-hidden] [ref=e178]: 
+                    - text: 29/10/2026
+              - generic [ref=e179]:
+                - link "150x150 " [ref=e180] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/dpoxdiv/
+                  - img "150x150" [ref=e181]
+                  - generic [ref=e182]: 
+                - generic [ref=e183]:
+                  - heading [level=3] [ref=e184]:
+                    - link "ສຳນັກງານປົກປ້ອງເງິນ(ສປງ)ຝາກຮ່ວມກັບ ປະກັນໄພເງິນຝາກ ສສ ຫວຽດນາມ(DIV) ຈັດກອງປະຊຸມແລກປ່ຽນບົດຮຽນ ແລະ ທົບທວນວຽກງານວິຊາສະເພາະດ້ານການປົກປ້ອງເງິນຝາກ." [ref=e185] [cursor=pointer]:
+                      - /url: https://www.dpo.gov.la/dpoxdiv/
+                  - generic [ref=e187]:
+                    - generic [aria-hidden] [ref=e188]: 
+                    - text: 27/10/2026
+              - generic [ref=e189]:
+                - link "1 ຮູບປະທານກອງປະຊຸມ 150x150 " [ref=e190] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/anv27year/
+                  - img "1 ຮູບປະທານກອງປະຊຸມ 150x150" [ref=e191]
+                  - generic [ref=e192]: 
+                - generic [ref=e193]:
+                  - heading [level=3] [ref=e194]:
+                    - link "ສຳນັກງານປົກປອງເງິນຝາກ (ສປງ) ສະເຫຼີມສະຫຼອງເນື່ອງໃນໂອກາດວັນສ້າງຕັ້ງ ສປງ ຄົບຮອບ 27 ປີ(23 ກັນຍາ 1999 – 23 ກັນຍາ 2026)" [ref=e195] [cursor=pointer]:
+                      - /url: https://www.dpo.gov.la/anv27year/
+                  - generic [ref=e197]:
+                    - generic [aria-hidden] [ref=e198]: 
+                    - text: 13/10/2026
+              - generic [ref=e199]:
+                - link "Pic GTP in KDIC 01 150x150 " [ref=e200] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/kdicglobaltrainingprogram/
+                  - img "Pic GTP in KDIC 01 150x150" [ref=e201]
+                  - generic [ref=e202]: 
+                - generic [ref=e203]:
+                  - heading [level=3] [ref=e204]:
+                    - link "ສໍານັກງານປົກປ້ອງເງິນຝາກ ເຂົ້າຮ່ວມຝຶກອົບຮົມ KDIC Global Training Program ປະຈໍາປີ 2026" [ref=e205] [cursor=pointer]:
+                      - /url: https://www.dpo.gov.la/kdicglobaltrainingprogram/
+                  - generic [ref=e207]:
+                    - generic [aria-hidden] [ref=e208]: 
+                    - text: 02/10/2026
+              - generic [ref=e209]:
+                - link "ຮອງຜູ້ວ່າປະກອບຄຳຄິດເຫັນ 1 150x150 " [ref=e210] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/laogoldfestival2026/
+                  - img "ຮອງຜູ້ວ່າປະກອບຄຳຄິດເຫັນ 1 150x150" [ref=e211]
+                  - generic [ref=e212]: 
+                - generic [ref=e213]:
+                  - heading [level=3] [ref=e214]:
+                    - link "ສຳນັກງານປົກປ້ອງເງິນຝາກ(ສປງ) ເຂົ້າຮ່ວມງານ”ເທດສະການຄຳລາວ2026″(Lao Gold Festival 2026)" [ref=e215] [cursor=pointer]:
+                      - /url: https://www.dpo.gov.la/laogoldfestival2026/
+                  - generic [ref=e217]:
+                    - generic [aria-hidden] [ref=e218]: 
+                    - text: 16/09/2026
+          - search [ref=e220]:
+            - searchbox [ref=e222]
+            - button "ຄົ້ນຫາ" [ref=e223] [cursor=pointer]
+          - generic [ref=e224]:
+            - heading "ຂ່າວສານ ອື່ນໆ" [level=4] [ref=e225]
+            - generic [ref=e227]:
+              - generic [ref=e228]:
+                - link "ຂຶ້ນຊີ້ແຈງກົດໝາຍ ສປງ 150x150 " [ref=e229] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/dporaw/
+                  - img "ຂຶ້ນຊີ້ແຈງກົດໝາຍ ສປງ 150x150" [ref=e230]
+                  - generic [ref=e231]: 
+                - generic [ref=e232]:
+                  - heading [level=3] [ref=e233]:
+                    - link "ຄະນະຮັບຜິດຊອບຄົ້ນຄວ້າສ້າງກົດໝາຍວ່າດ້ວຍການປົກປ້ອງເງິນຝາກລາຍງານການຄົ້ນຄວ້າຄຳເຫັນຕໍ່ຮ່າງກົດໝາຍ ຕໍ່ກອງປະຊຸມສະພາແຫ່ງຊາດ" [ref=e234] [cursor=pointer]:
+                      - /url: https://www.dpo.gov.la/dporaw/
+                  - generic [ref=e236]:
+                    - generic [aria-hidden] [ref=e237]: 
+                    - text: 29/10/2026
+              - generic [ref=e238]:
+                - link "150x150 " [ref=e239] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/dpoxdiv/
+                  - img "150x150" [ref=e240]
+                  - generic [ref=e241]: 
+                - generic [ref=e242]:
+                  - heading [level=3] [ref=e243]:
+                    - link "ສຳນັກງານປົກປ້ອງເງິນ(ສປງ)ຝາກຮ່ວມກັບ ປະກັນໄພເງິນຝາກ ສສ ຫວຽດນາມ(DIV) ຈັດກອງປະຊຸມແລກປ່ຽນບົດຮຽນ ແລະ ທົບທວນວຽກງານວິຊາສະເພາະດ້ານການປົກປ້ອງເງິນຝາກ." [ref=e244] [cursor=pointer]:
+                      - /url: https://www.dpo.gov.la/dpoxdiv/
+                  - generic [ref=e246]:
+                    - generic [aria-hidden] [ref=e247]: 
+                    - text: 27/10/2026
+              - generic [ref=e248]:
+                - link "1 ຮູບປະທານກອງປະຊຸມ 150x150 " [ref=e249] [cursor=pointer]:
+                  - /url: https://www.dpo.gov.la/anv27year/
+                  - img "1 ຮູບປະທານກອງປະຊຸມ 150x150" [ref=e250]
+                  - generic [ref=e251]: 
+                - generic [ref=e252]:
+                  - heading [level=3] [ref=e253]:
+                    - link "ສຳນັກງານປົກປອງເງິນຝາກ (ສປງ) ສະເຫຼີມສະຫຼອງເນື່ອງໃນໂອກາດວັນສ້າງຕັ້ງ ສປງ ຄົບຮອບ 27 ປີ(23 ກັນຍາ 1999 – 23 ກັນຍາ 2026)" [ref=e254] [cursor=pointer]:
+                      - /url: https://www.dpo.gov.la/anv27year/
+                  - generic [ref=e256]:
+                    - generic [aria-hidden] [ref=e257]: 
+                    - text: 13/10/2026
+          - generic [ref=e259]:
+            - heading "ໜ້າເຊື່ອມຕໍ່ເວັບຕ່າງໆ" [level=3] [ref=e260]
+            - paragraph [ref=e261]:
+              - link [ref=e262] [cursor=pointer]:
+                - /url: http://www.div.gov.vn/Default.aspx?alias=www.div.gov.vn/English
+              - link [ref=e263] [cursor=pointer]:
+                - /url: http://www.lps.go.id/
+              - link [ref=e264] [cursor=pointer]:
+                - /url: https://www.dic.go.jp/english/index.html
+              - link [ref=e265] [cursor=pointer]:
+                - /url: https://www.kdic.or.kr/english/index.jsp
+              - link [ref=e266] [cursor=pointer]:
+                - /url: http://www.dpa.or.th/en/site/index
+    - contentinfo [ref=e267]:
+      - generic [ref=e269]:
+        - generic [ref=e271]:
+          - heading "ແຜນທີ່" [level=4] [ref=e272]
+          - iframe [ref=e275]
+        - generic [ref=e277]:
+          - heading "ຂ່າວຫຼ້າສຸດ" [level=4] [ref=e278]
+          - list [ref=e280]:
+            - listitem [ref=e281]:
+              - link "ຄະນະຮັບຜິດຊອບຄົ້ນຄວ້າສ້າງກົດໝາຍວ່າດ້ວຍການປົກປ້ອງເງິນຝາກລາຍງານການຄົ້ນຄວ້າຄຳເຫັນຕໍ່ຮ່າງກົດໝາຍ ຕໍ່ກອງປະຊຸມສະພາແຫ່ງຊາດ" [ref=e282] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/dporaw/
+            - listitem [ref=e283]:
+              - link "ສຳນັກງານປົກປ້ອງເງິນ(ສປງ)ຝາກຮ່ວມກັບ ປະກັນໄພເງິນຝາກ ສສ ຫວຽດນາມ(DIV) ຈັດກອງປະຊຸມແລກປ່ຽນບົດຮຽນ ແລະ ທົບທວນວຽກງານວິຊາສະເພາະດ້ານການປົກປ້ອງເງິນຝາກ." [ref=e284] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/dpoxdiv/
+            - listitem [ref=e285]:
+              - link "ສຳນັກງານປົກປອງເງິນຝາກ (ສປງ) ສະເຫຼີມສະຫຼອງເນື່ອງໃນໂອກາດວັນສ້າງຕັ້ງ ສປງ ຄົບຮອບ 27 ປີ(23 ກັນຍາ 1999 – 23 ກັນຍາ 2026)" [ref=e286] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/anv27year/
+            - listitem [ref=e287]:
+              - link "ສໍານັກງານປົກປ້ອງເງິນຝາກ ເຂົ້າຮ່ວມຝຶກອົບຮົມ KDIC Global Training Program ປະຈໍາປີ 2026" [ref=e288] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/kdicglobaltrainingprogram/
+            - listitem [ref=e289]:
+              - link "ສຳນັກງານປົກປ້ອງເງິນຝາກ(ສປງ) ເຂົ້າຮ່ວມງານ”ເທດສະການຄຳລາວ2026″(Lao Gold Festival 2026)" [ref=e290] [cursor=pointer]:
+                - /url: https://www.dpo.gov.la/laogoldfestival2026/
+        - generic [ref=e292]:
+          - heading "ຕິດຕໍ່ພົວພັນໄດ້ທີ່" [level=4] [ref=e293]
+          - generic [ref=e295]:
+            - 'link "ອິເມວ: info@dpo.gov.la" [ref=e297] [cursor=pointer]':
+              - /url: https://www.facebook.com/dpolaos
+            - 'link "Facebook Page: ສໍານັກງານປົກປ້ອງເງິນຝາກ: ສປງ" [ref=e299] [cursor=pointer]':
+              - /url: https://www.facebook.com/dpolaos
+            - 'link "ເບີໂທ: +85621-330005" [ref=e301] [cursor=pointer]':
+              - /url: tel:85621-330005
+            - 'link "ແຟ໊ກ: 021-330631" [ref=e303] [cursor=pointer]':
+              - /url: "#"
+            - 'link "ເບີໂທສາຍດ່ວນ: 1524" [ref=e305] [cursor=pointer]':
+              - /url: "#"
+            - link "ທີ່ຢູ່ ຊັ້ນ 4 ຕຶກສຳນັກງານ ຄະນະກຳມະການຄຸ້ມຄອງຫຼັກຊັບ, ຖະໜົນໄກສອນພົມວິຫານ, ບ້ານໂພນສະອາດ, ເມືອງໄຊເສດຖາ, ນະຄອນຫຼວງວຽງຈັນ, ສປປ ລາວ." [ref=e307] [cursor=pointer]:
+              - /url: "#"
+        - generic [ref=e308]:
+          - complementary [ref=e309]:
+            - heading [level=1] [ref=e310]:
+              - link "ຈຳນວນຜູ້ເຂົ້າຊົມ" [ref=e311] [cursor=pointer]:
+                - /url: http://laoitdev.com
+            - generic [ref=e312]:
+              - paragraph [ref=e313]: ຈໍານວນມື້ນີ້:377
+              - paragraph [ref=e314]: ຈໍານວນມື້ວານນີ້:878
+              - paragraph [ref=e315]: ຈໍານວນອາທິດນີ້:20399
+              - paragraph [ref=e316]: ຈໍານວນເດືອນນີ້:90269
+              - paragraph [ref=e317]: ຈຳນວນທັງໝົດ:1395401
+              - paragraph [ref=e318]: ເຂົ້າຊົມຢູ່ປັດຈຸບັນ:170
+          - figure [ref=e320]:
+            - strong [ref=e323]: ສະປອດໂຄສະນາ ປົກປ້ອງເງິນຝາກ 2024
+          - figure [ref=e325]:
+            - strong [ref=e328]: ສະປອດໂຄສະນາ ປົກປ້ອງເງິນຝາກ ພາສາຊົນເຜົ່າ
+      - generic [ref=e331]:
+        - generic [ref=e332]: Copyright © 2020 ສໍານັກງານປົກປ້ອງເງິນຝາກ
+        - generic [ref=e336]:
+          - generic:
+            - link:
+              - /url: "#"
+          - generic:
+            - link:
+              - /url: "#"
+  - text:  
+  - list [ref=e341]:
+    - listitem [ref=e342] [cursor=pointer]:
+      - generic [ref=e343]: →
+    - listitem [ref=e344] [cursor=pointer]:
+      - link "" [ref=e346]:
+        - /url: https://www.facebook.com/dpolaos
+      - generic:
+        - link "DPO LAOS":
+          - /url: https://www.facebook.com/dpolaos
+    - listitem [ref=e348] [cursor=pointer]:
+      - link "" [ref=e350]:
+        - /url: https://www.youtube.com/@dpolaos
+      - generic:
+        - link "YouTube":
+          - /url: https://www.youtube.com/@dpolaos

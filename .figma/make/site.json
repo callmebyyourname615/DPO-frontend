@@ -1,0 +1,10 @@
+{
+  "description": "A structured project workspace for reviewing completed page layouts, routes, menus, responsive states, and interactions, with clear visibility into remaining gaps.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
