@@ -3,6 +3,7 @@ import {
   KeyboardEvent,
   ReactNode,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react"
@@ -23,27 +24,18 @@ import {
   faChevronLeft,
   faChevronRight,
   faChevronDown,
+  faAnglesRight,
   faPause,
   faPlay,
   faEnvelope,
   faLocationDot,
   faPenToSquare,
+  faXmark,
+  faPaperPlane,
 } from "@fortawesome/free-solid-svg-icons"
 import { faFacebookF, faYoutube } from "@fortawesome/free-brands-svg-icons"
-import assetData from "./data/assets.json"
-import newsData from "./data/news.json"
-import newsExcerpts from "./data/news-excerpts.json"
-import decrees from "./data/decrees.json"
-import legalDocuments from "./data/legal-documents.json"
-import fsnpDocuments from "./data/fsnp.json"
-import bilateralArticles from "./data/bilateral.json"
-import iadiParagraphs from "./data/iadi.json"
-import pageContent from "./data/content.json"
-import dutiesContent from "./data/duties.json"
-import organization from "./data/organization.json"
-import faqData from "./data/faq.json"
-import informationDocuments from "./data/information.json"
-import partners from "./data/partners.json"
+import { request, useApi, mediaUrl, date, trackVisit, type ChatReply, type ChatSource, type VisitorStats, type List, type News, type Document, type Faq, type Partner, type Page, type Settings, type Home } from "./api"
+import { useLocale } from "./locale"
 
 gsap.registerPlugin(useGSAP, ScrollToPlugin)
 
@@ -64,7 +56,6 @@ const paths = {
   faq: "/ຄຳຖາມທີ່ພົບເລື່ອຍ/",
   connections: "/ເຊື່ອມຕໍ່/",
   information: "/ຂໍ້ມູນ/",
-  about: "/ກ່ຽວກັບ/",
 }
 
 type Slot = {
@@ -84,7 +75,11 @@ type MediaAsset = {
   fit?: string
   natural?: boolean
 }
-const homeAssets: Record<string, MediaAsset | undefined> = assetData
+const homeAssets: Record<string, MediaAsset | undefined> = {
+  "shared.brand-logo": { kind: "image", src: "/assets/dpo/22844fe243f16f4e.png", alt: "DPO" },
+  "shared.flag-la": { kind: "image", src: "/assets/dpo/2645823a0e1ba640.png", alt: "LA" },
+  "shared.flag-en": { kind: "image", src: "/assets/dpo/d5c7675bf1b02712.png", alt: "EN" },
+}
 
 function AssetPlaceholder({
   id,
@@ -98,82 +93,8 @@ function AssetPlaceholder({
   const asset = /^(home|shared|footer|bilateral|organization\.(board|party|state))\./.test(id) || /^institutional\.(duties|history)\./.test(id)
     ? homeAssets[id]
     : undefined
-  const [failedSource, setFailedSource] = useState("")
-  const loaded = asset && failedSource !== asset.src
-  const ref = useRef<HTMLDivElement>(null)
-  const [size, setSize] = useState({ width, height })
-  useEffect(() => {
-    const node = ref.current
-    if (!node) return
-    const update = () =>
-      setSize({
-        width: Math.round(node.getBoundingClientRect().width),
-        height: Math.round(node.getBoundingClientRect().height),
-      })
-    update()
-    const observer = new ResizeObserver(update)
-    observer.observe(node)
-    return () => observer.disconnect()
-  }, [])
-  return (
-    <div
-      ref={ref}
-      className={`asset-placeholder ${
-        loaded ? "asset-loaded" : ""
-      } ${className}`}
-      data-asset-id={id}
-      style={
-        {
-          "--slot-w": `${width}px`,
-          "--slot-ratio": `${width} / ${height}`,
-          "--mobile-w": `${mobileWidth}px`,
-          "--mobile-ratio": `${mobileWidth} / ${mobileHeight}`,
-        } as React.CSSProperties
-      }
-    >
-      {loaded ? (
-        asset.kind === "map" ? (
-          <iframe
-            src={asset.src}
-            title={asset.alt}
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            allowFullScreen
-          />
-        ) : asset.kind === "audio" ? (
-          <audio
-            controls
-            preload="none"
-            src={asset.src}
-            aria-label={asset.alt}
-            onError={() => setFailedSource(asset.src)}
-          />
-        ) : (
-          <img
-            src={asset.src}
-            alt={asset.alt || label}
-            width={width}
-            height={height}
-            loading={
-              id.startsWith("home.hero") || id.startsWith("shared.")
-                ? "eager"
-                : "lazy"
-            }
-            style={{ objectFit: asset.fit === "cover" ? "cover" : "contain" }}
-            onError={() => setFailedSource(asset.src)}
-          />
-        )
-      ) : (
-        <>
-          <span>{label}</span>
-          <small>
-            {size.width} × {size.height} px
-          </small>
-          <code>{id}</code>
-        </>
-      )}
-    </div>
-  )
+  if (!asset) return null
+  return <div className={`asset-placeholder asset-loaded ${className}`} style={{ "--slot-w": `${width}px`, "--slot-ratio": `${width} / ${height}`, "--mobile-w": `${mobileWidth}px`, "--mobile-ratio": `${mobileWidth} / ${mobileHeight}` } as React.CSSProperties}><img src={asset.src} alt={asset.alt || label} width={width} height={height} style={{ objectFit: asset.fit === "cover" ? "cover" : "contain" }} /></div>
 }
 
 function navigate(path: string) {
@@ -222,7 +143,6 @@ const menu: MenuItem[] = [
   { label: "ໜ້າຫຼັກ", to: "/" },
   {
     label: "ກ່ຽວກັບ ສປງ",
-    to: paths.about,
     children: [
       { label: "ພາລະບົດບາດ ແລະ ໜ້າທີ່", to: paths.duties },
       { label: "ປະຫວັດຄວາມເປັນມາ", to: paths.history },
@@ -291,6 +211,8 @@ function SearchBox({ compact = false }: { compact?: boolean }) {
 }
 
 function Header({ path }: { path: string }) {
+  const { locale, setLocale, t } = useLocale()
+  const [languageOpen, setLanguageOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [stickyVisible, setStickyVisible] = useState(false)
   const [stickyMenuOpen, setStickyMenuOpen] = useState(false)
@@ -389,9 +311,9 @@ function Header({ path }: { path: string }) {
             mobileHeight={50}
           />
         </Link>
-        <Link to="/en/" className="mobile-language" aria-label="English">
+        <button type="button" className="mobile-language" aria-label={locale === "lo" ? "Switch to English" : "ປ່ຽນເປັນພາສາລາວ"} onClick={() => setLocale(locale === "lo" ? "en" : "lo")}>
           <FontAwesomeIcon icon={faLanguage} />
-        </Link>
+        </button>
         <button
           className="menu-trigger"
           aria-expanded={mobileOpen}
@@ -402,7 +324,7 @@ function Header({ path }: { path: string }) {
           <span className="sr-only">ເມນູ</span>
         </button>
       </div>
-      <nav className="main-nav" aria-label="ເມນູຫຼັກ">
+      <nav className="main-nav" lang={locale} aria-label={locale === "en" ? "Main navigation" : "ເມນູຫຼັກ"}>
         <div className="container nav-inner">
           <details className="nav-search">
             <summary aria-label="ຄົ້ນຫາ">
@@ -414,12 +336,12 @@ function Header({ path }: { path: string }) {
             <div className="nav-item" key={item.label}>
               {item.to ? (
                 <Link to={item.to} className={path === item.to || item.children?.some((child) => child.to === path || child.children?.some((sub) => sub.to === path)) ? "active" : ""}>
-                  {item.label}
+                  {t(item.label)}
                   {item.children && <span aria-hidden="true">⌄</span>}
                 </Link>
               ) : (
-                <button type="button">
-                  {item.label} <span aria-hidden="true">⌄</span>
+                <button type="button" className={item.children?.some((child) => child.to === path || child.children?.some((sub) => sub.to === path)) ? "active" : ""}>
+                  {t(item.label)} <span aria-hidden="true">⌄</span>
                 </button>
               )}
               {item.children && (
@@ -427,10 +349,10 @@ function Header({ path }: { path: string }) {
                   {item.children.map((child) => (
                     child.children ? (
                       <div className={`nested-dropdown ${child.children.some((sub) => sub.to === path) ? "current" : ""}`} key={child.label} tabIndex={0}>
-                        <div className="nested-dropdown-trigger">{child.label}<FontAwesomeIcon icon={faChevronRight} aria-hidden="true" /></div>
-                        <div className="nested-dropdown-panel">{child.children.map((sub) => <Link to={sub.to!} key={sub.to} className={sub.to === path ? "current" : ""}>{sub.label}</Link>)}</div>
+                        <div className="nested-dropdown-trigger">{t(child.label)}<FontAwesomeIcon icon={faChevronRight} aria-hidden="true" /></div>
+                        <div className="nested-dropdown-panel">{child.children.map((sub) => <Link to={sub.to!} key={sub.to} className={sub.to === path ? "current" : ""}>{t(sub.label)}</Link>)}</div>
                       </div>
-                    ) : <Link to={child.to!} key={child.to} className={child.to === path ? "current" : ""}>{child.label}</Link>
+                    ) : <Link to={child.to!} key={child.to} className={child.to === path ? "current" : ""}>{t(child.label)}</Link>
                   ))}
                 </div>
               )}
@@ -438,50 +360,51 @@ function Header({ path }: { path: string }) {
           ))}
           <div className="header-tools">
             <div className="utility-links">
-              <Link to={paths.information}>ຂໍ້ມູນ</Link>
-              <Link to={paths.connections}>ເຊື່ອມຕໍ່</Link>
+              <Link to={paths.information}>{t("ຂໍ້ມູນ")}</Link>
+              <Link to={paths.connections}>{t("ເຊື່ອມຕໍ່")}</Link>
             </div>
-            <details className="language-select">
-              <summary>
+            <div className="language-select" onKeyDown={event => { if (event.key === "Escape") setLanguageOpen(false) }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setLanguageOpen(false) }}>
+              <button type="button" className="language-trigger" aria-label={locale === "lo" ? "ເລືອກພາສາ" : "Choose language"} aria-expanded={languageOpen} aria-controls="language-options" onClick={() => setLanguageOpen(!languageOpen)}>
                 <AssetPlaceholder
-                  id="shared.flag-la"
-                  label="LA"
+                  id={locale === "lo" ? "shared.flag-la" : "shared.flag-en"}
+                  label={locale.toUpperCase()}
                   width={18}
                   height={12}
                 />{" "}
-                LA ⌄
-              </summary>
-              <Link to="/en/" className="language">
+                {locale === "lo" ? "LA" : "EN"} ⌄
+              </button>
+              <button id="language-options" type="button" className="language" hidden={!languageOpen} onClick={() => { setLocale(locale === "lo" ? "en" : "lo"); setLanguageOpen(false) }}>
                 <AssetPlaceholder
-                  id="shared.flag-en"
-                  label="EN"
+                  id={locale === "lo" ? "shared.flag-en" : "shared.flag-la"}
+                  label={locale === "lo" ? "EN" : "LA"}
                   width={18}
                   height={12}
                 />{" "}
-                EN
-              </Link>
-            </details>
+                {locale === "lo" ? "EN" : "LA"}
+              </button>
+            </div>
           </div>
         </div>
       </nav>
       <nav
         id="mobile-menu"
         className={`mobile-menu ${mobileOpen ? "open" : ""}`}
-        aria-label="ເມນູມືຖື"
+        lang={locale}
+        aria-label={locale === "en" ? "Mobile navigation" : "ເມນູມືຖື"}
       >
         {menu.map((item) => (
           <div className="mobile-nav-item" key={item.label}>
             <div>
               {item.to ? (
-                <Link to={item.to}>{item.label}</Link>
+                <Link to={item.to}>{t(item.label)}</Link>
               ) : (
-                <span>{item.label}</span>
+                <span>{t(item.label)}</span>
               )}
               {item.children && (
                 <button
                   aria-expanded={expanded.includes(item.label)}
                   onClick={() => toggle(item.label)}
-                  aria-label={`ເປີດ ${item.label}`}
+                  aria-label={`ເປີດ ${t(item.label)}`}
                 >
                   {expanded.includes(item.label) ? "−" : "+"}
                 </button>
@@ -492,18 +415,18 @@ function Header({ path }: { path: string }) {
                 {item.children.map((child) => (
                   child.children ? (
                     <details className="mobile-nested" key={child.label}>
-                      <summary>{child.label}<FontAwesomeIcon icon={faChevronDown} aria-hidden="true" /></summary>
-                      <div className="mobile-submenu">{child.children.map((sub) => <Link to={sub.to!} key={sub.to}>{sub.label}</Link>)}</div>
+                      <summary>{t(child.label)}<FontAwesomeIcon icon={faChevronDown} aria-hidden="true" /></summary>
+                      <div className="mobile-submenu">{child.children.map((sub) => <Link to={sub.to!} key={sub.to}>{t(sub.label)}</Link>)}</div>
                     </details>
-                  ) : <Link to={child.to!} key={child.to}>{child.label}</Link>
+                  ) : <Link to={child.to!} key={child.to}>{t(child.label)}</Link>
                 ))}
               </div>
             )}
           </div>
         ))}
         <div className="mobile-utilities">
-          <Link to={paths.connections}>ເຊື່ອມຕໍ່</Link>
-          <Link to={paths.information}>ຂໍ້ມູນ</Link>
+          <Link to={paths.connections}>{t("ເຊື່ອມຕໍ່")}</Link>
+          <Link to={paths.information}>{t("ຂໍ້ມູນ")}</Link>
         </div>
       </nav>
       <div
@@ -537,24 +460,25 @@ function Header({ path }: { path: string }) {
           <nav
             id="sticky-menu"
             className="container sticky-menu"
-            aria-label="ເມນູຫຼັກ"
+            lang={locale}
+            aria-label={locale === "en" ? "Main navigation" : "ເມນູຫຼັກ"}
           >
             {menu.map((item) => (
               <div key={item.label}>
                 {item.children ? (
                   <details onToggle={(event) => rotateArrow(event.currentTarget)}>
-                    <summary><span>{item.label}</span><FontAwesomeIcon icon={faChevronDown} className="menu-chevron" /></summary>
+                    <summary><span>{t(item.label)}</span><FontAwesomeIcon icon={faChevronDown} className="menu-chevron" /></summary>
                     <div className="sticky-submenu">
                       {item.children.map((child) => (
                         child.children ? <details className="sticky-nested" key={child.label} onToggle={(event) => rotateArrow(event.currentTarget)}>
-                          <summary><span>{child.label}</span><FontAwesomeIcon icon={faChevronDown} className="menu-chevron" /></summary>
-                          <div className="sticky-submenu">{child.children.map((sub) => <Link key={sub.to} to={sub.to!}><span className="menu-guide" aria-hidden="true" />{sub.label}</Link>)}</div>
-                        </details> : <Link key={child.to} to={child.to!}><span className="menu-guide" aria-hidden="true" />{child.label}</Link>
+                          <summary><span>{t(child.label)}</span><FontAwesomeIcon icon={faChevronDown} className="menu-chevron" /></summary>
+                          <div className="sticky-submenu">{child.children.map((sub) => <Link key={sub.to} to={sub.to!}><span className="menu-guide" aria-hidden="true" />{t(sub.label)}</Link>)}</div>
+                        </details> : <Link key={child.to} to={child.to!}><span className="menu-guide" aria-hidden="true" />{t(child.label)}</Link>
                       ))}
                     </div>
                   </details>
                 ) : (
-                  <Link to={item.to!}>{item.label}</Link>
+                  <Link to={item.to!}>{t(item.label)}</Link>
                 )}
               </div>
             ))}
@@ -565,1058 +489,158 @@ function Header({ path }: { path: string }) {
   )
 }
 
-function Footer() {
-  return (
-    <footer>
-      <div className="footer-main">
-        <div className="container footer-grid">
-          <div>
-            <h3>ແຜນທີ່</h3>
-            <AssetPlaceholder
-              id="footer.map"
-              label="Footer map"
-              width={260}
-              height={240}
-              mobileWidth={358}
-              mobileHeight={240}
-            />
-          </div>
-          <div>
-            <h3>ຂ່າວຫຼ້າສຸດ</h3>
-            <ul className="footer-links">
-              {newsData.slice(0, 5).map((news) => (
-                <li key={news.slug}>
-                  <Link to={`/${news.slug}/`}>{news.title}</Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h3>ຕິດຕໍ່</h3>
-            <p>
-              <a href="mailto:info@dpo.gov.la">ອິເມວ: info@dpo.gov.la</a>
-            </p>
-            <p>
-              <a
-                href="https://www.facebook.com/dpolaos"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Facebook Page: ສໍານັກງານປົກປ້ອງເງິນຝາກ: ສປງ
-              </a>
-            </p>
-            <p>
-              <a href="tel:+85621330005">ເບີໂທ: +85621-330005</a>
-            </p>
-            <p>ແຟ໊ກ: 021-330631</p>
-            <p>
-              <a href="tel:1524">ເບີໂທສາຍດ່ວນ: 1524</a>
-            </p>
-            <p>
-              ທີ່ຢູ່ ຊັ້ນ 4 ຕຶກສຳນັກງານ ຄະນະກຳມະການຄຸ້ມຄອງຫຼັກຊັບ, ຖະໜົນໄກສອນພົມວິຫານ,
-              ບ້ານໂພນສະອາດ, ເມືອງໄຊເສດຖາ, ນະຄອນຫຼວງວຽງຈັນ, ສປປ ລາວ.
-            </p>
-          </div>
-          <div>
-            <h3>ສະຖິຕິຜູ້ເຂົ້າຊົມ</h3>
-            <p className="visitor-note">ຂໍ້ມູນຜູ້ເຂົ້າຊົມຍັງບໍ່ມີ</p>
-            <dl className="stats-list">
-              <div>
-                <dt>ມື້ນີ້</dt>
-                <dd>—</dd>
-              </div>
-              <div>
-                <dt>ທັງໝົດ</dt>
-                <dd>—</dd>
-              </div>
-            </dl>
-            <AssetPlaceholder
-              id="footer.audio-1"
-              label="Audio player"
-              width={260}
-              height={54}
-            />
-            <p className="audio-caption">ສະປອດໂຄສະນາ ປົກປ້ອງເງິນຝາກ 2024</p>
-            <AssetPlaceholder
-              id="footer.audio-2"
-              label="Audio player"
-              width={260}
-              height={54}
-            />
-            <p className="audio-caption">ສະປອດໂຄສະນາ ປົກປ້ອງເງິນຝາກ ພາສາຊົນເຜົ່າ</p>
-          </div>
-        </div>
-      </div>
-      <div className="copyright">
-        <div className="container">
-          <span>Copyright © 2020 ສໍານັກງານປົກປ້ອງເງິນຝາກ</span>
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          >
-            ກັບຂຶ້ນເທິງ ↑
-          </button>
-        </div>
-      </div>
-    </footer>
-  )
-}
 
 function PageTitle({ title }: { title: string }) {
-  return (
-    <div className="title-band">
-      <div className="container">
-        <p>
-          <Link to="/" className="breadcrumb-home"><FontAwesomeIcon icon={faHouse} aria-hidden="true" /> ໜ້າຫຼັກ</Link> <span>/</span> {title}
-        </p>
-        <h1>{title}</h1>
-      </div>
-    </div>
-  )
+  const { locale, t } = useLocale()
+  return <nav className="title-band" aria-label="Breadcrumb"><div className="container breadcrumb-content"><Link to="/" aria-label={t("ໜ້າຫຼັກ")}><FontAwesomeIcon icon={faHouse} aria-hidden="true" /></Link><FontAwesomeIcon className="breadcrumb-separator" icon={faAnglesRight} aria-hidden="true" /><span lang={t(title) !== title ? locale : "lo"} aria-current="page">{t(title)}</span></div></nav>
 }
-
-const newsItems = newsData.slice(0, 5).map((item) => item.title)
-
-function Home() {
+function ApiState({ loading, error, empty }: { loading: boolean; error: string; empty?: boolean }) {
+  return loading ? <p role="status">ກຳລັງໂຫຼດຂໍ້ມູນ...</p> : error ? <p role="alert">{error} · ກະລຸນາລອງໃໝ່</p> : empty ? <p role="status">ບໍ່ພົບຂໍ້ມູນ</p> : null
+}
+function Footer() {
+  const settings = useApi<Settings>("/site-settings")
+  const news = useApi<List<News>>("/news?limit=5")
+  const data = settings.data
+  const [visitors, setVisitors] = useState<VisitorStats | null>(null)
+  const [visitorError, setVisitorError] = useState(false)
+  useEffect(() => { let active = true; trackVisit().then(stats => { if (active) setVisitors(stats) }).catch(() => { if (active) setVisitorError(true) }); return () => { active = false } }, [])
+  return <footer><div className="footer-main"><div className="container footer-grid">
+    <div><h3>ແຜນທີ່</h3>{data?.mapEmbedUrl && <iframe src={data.mapEmbedUrl} title="ແຜນທີ່" loading="lazy" className="api-footer-map" />}</div>
+    <div><h3>ຂ່າວຫຼ້າສຸດ</h3><ul className="footer-links">{news.data?.data.map(item => <li key={item.id}><Link to={`/${item.slug}/`}>{item.title}</Link></li>)}</ul><ApiState loading={news.loading} error={news.error} /></div>
+    <div><h3>ຕິດຕໍ່ພົວພັນໄດ້ທີ່</h3>{data && <div className="footer-contact"><p><FontAwesomeIcon icon={faEnvelope} aria-hidden="true" /><span>ອີເມວ: <a href={`mailto:${data.email}`}>{data.email}</a></span></p>{data.facebookUrl && <p><FontAwesomeIcon icon={faFacebookF} aria-hidden="true" /><a href={data.facebookUrl} target="_blank" rel="noreferrer">Facebook Page: ສໍານັກງານປົກປ້ອງເງິນຝາກ: ສປງ</a></p>}<p><FontAwesomeIcon icon={faPhoneVolume} aria-hidden="true" /><span>ເບີໂທ: <a href={`tel:${data.phone}`}>{data.phone}</a></span></p><p><FontAwesomeIcon icon={faLocationDot} aria-hidden="true" /><span>ທີ່ຢູ່: {data.address}</span></p>{data.youtubeUrl && <p><FontAwesomeIcon icon={faYoutube} aria-hidden="true" /><a href={data.youtubeUrl} target="_blank" rel="noreferrer">YouTube</a></p>}</div>}<ApiState loading={settings.loading} error={settings.error} /></div>
+    <div><h3>ຈຳນວນຜູ້ເຂົ້າຊົມ</h3><dl className="stats-list">{([['ຈຳນວນມື້ນີ້', 'today'], ['ຈຳນວນມື້ວານນີ້', 'yesterday'], ['ຈຳນວນອາທິດນີ້', 'week'], ['ຈຳນວນເດືອນນີ້', 'month'], ['ຈຳນວນທັງໝົດ', 'total']] as const).map(([label, key]) => <div key={key}><dt>{label}:</dt><dd>{visitors ? visitors[key].toLocaleString("lo-LA") : "—"}</dd></div>)}</dl>{visitorError && <p role="status">ບໍ່ສາມາດໂຫຼດສະຖິຕິໄດ້</p>}{data?.footerAudioUrl && <><audio controls preload="none" src={mediaUrl(data.footerAudioUrl)} aria-label="ສະປອດໂຄສະນາ ປົກປ້ອງເງິນຝາກ 2024" /><p className="audio-caption">ສະປອດໂຄສະນາ ປົກປ້ອງເງິນຝາກ 2024</p></>}{data?.footerAudioUrl2 && <><audio controls preload="none" src={mediaUrl(data.footerAudioUrl2)} aria-label="ສະປອດໂຄສະນາ ປົກປ້ອງເງິນຝາກ ພາສາຊົນເຜົ່າ" /><p className="audio-caption">ສະປອດໂຄສະນາ ປົກປ້ອງເງິນຝາກ ພາສາຊົນເຜົ່າ</p></>}</div>
+  </div></div><div className="copyright"><div className="container"><span>© {new Date().getFullYear()} ສໍານັກງານປົກປ້ອງເງິນຝາກ</span><button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>ກັບຂຶ້ນເທິງ ↑</button></div></div></footer>
+}
+function NewsCard({ item }: { item: News }) {
+  return <article className="news-card"><Link to={`/${item.slug}/`}>{item.coverImageUrl && <img className="api-news-image" src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" />}</Link><div><h3><Link to={`/${item.slug}/`}>{item.title}</Link></h3><time>{date(item.publishedAt)}</time></div></article>
+}
+function CountUp({ value }: { value: string }) {
+  const numberRef = useRef<HTMLSpanElement>(null)
+  const match = value.match(/^(\s*)(\d[\d,]*(?:\.\d+)?)(.*)$/)
+  useGSAP((_, contextSafe) => {
+    const element = numberRef.current
+    if (!element || !match || !contextSafe || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    const raw = match[2].replace(/,/g, "")
+    const target = Number(raw)
+    const decimals = raw.split(".")[1]?.length ?? 0
+    const counter = { value: 0 }
+    element.textContent = "0"
+    const start = contextSafe(() => {
+      gsap.to(counter, { value: target, duration: 2, ease: "power2.out", onUpdate: () => {
+        element.textContent = counter.value.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals, useGrouping: match[2].includes(",") })
+      } })
+    })
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) { observer.disconnect(); start() }
+    }, { threshold: 0.25 })
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, { dependencies: [value], revertOnUpdate: true })
+  if (!match) return <>{value}</>
+  return <span aria-label={value}>{match[1]}<span ref={numberRef} aria-hidden="true">{match[2]}</span>{match[3]}</span>
+}
+function HomePage() {
+  const home = useApi<Home>("/home")
+  const news = useApi<List<News>>("/news?limit=10")
+  const protection = useApi<Page>("/pages/home-protection")
+  const members = useApi<Page>("/pages/home-members")
   const [slide, setSlide] = useState(0)
+  const newsTrack = useRef<HTMLDivElement>(null)
   const [paused, setPaused] = useState(false)
-  const [reduceMotion, setReduceMotion] = useState(
-    () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-  )
-  const changingSlide = useRef(false)
-  const homeRef = useRef<HTMLDivElement>(null)
-  const { contextSafe } = useGSAP({ scope: homeRef })
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)")
-    const update = () => setReduceMotion(media.matches)
-    media.addEventListener("change", update)
-    return () => media.removeEventListener("change", update)
-  }, [])
-  const changeSlide = contextSafe((next: number) => {
-    if (changingSlide.current || next === slide) return
-    const slides = homeRef.current?.querySelectorAll<HTMLElement>(".hero-slide")
-    if (!slides || reduceMotion) { setSlide(next); return }
-    const outgoing = slides[slide]
-    const incoming = slides[next]
-    changingSlide.current = true
-    // Keep the old image opaque underneath until the incoming layer fully covers it.
-    gsap.set(outgoing, { autoAlpha: 1, zIndex: 1 })
-    gsap.set(incoming, { autoAlpha: 0, zIndex: 2 })
-    gsap.to(incoming, {
-      autoAlpha: 1, duration: 0.9, ease: "power1.inOut", overwrite: "auto",
-      onComplete: () => {
-        gsap.set(outgoing, { autoAlpha: 0, zIndex: 0 })
-        gsap.set(incoming, { zIndex: 1 })
-        changingSlide.current = false
-        setSlide(next)
-      },
-    })
-  })
-  useEffect(() => {
-    if (paused || reduceMotion) return
-    const timer = window.setInterval(() => {
-      if (!document.hidden) changeSlide((slide + 1) % 5)
-    }, 8000)
-    return () => window.clearInterval(timer)
-  }, [slide, paused, reduceMotion, changeSlide])
-  useGSAP(
-    () => {
-      const media = gsap.matchMedia()
-      media.add(
-        "(prefers-reduced-motion: no-preference)",
-        (context) => {
-          const counters = Array.from(
-            homeRef.current?.querySelectorAll<HTMLElement>(".counter-value") ??
-              [],
-          )
-          const section = homeRef.current?.querySelector(".protection-copy")
-          if (!section || !counters.length) return
-          context.add("countUp", () => {
-            gsap.fromTo(counters, { textContent: 0 }, {
-              textContent: (_index: number, element: HTMLElement) =>
-                Number(element.dataset.countTarget),
-              snap: { textContent: 1 },
-              duration: 1.8,
-              ease: "power2.out",
-            })
-          })
-          const observer = new IntersectionObserver(
-            (entries) => {
-              if (entries.some((entry) => entry.isIntersecting)) {
-                context.countUp()
-                observer.disconnect()
-              }
-            },
-            { threshold: 0.25 },
-          )
-          observer.observe(section)
-          return () => observer.disconnect()
-        },
-        homeRef,
-      )
-      return () => media.revert()
-    },
-    { scope: homeRef },
-  )
-  const [newsStart, setNewsStart] = useState(0)
-  const newsRef = useRef<HTMLDivElement>(null)
-  const moveNews = (direction: number) => {
-    const next = Math.max(
-      0,
-      Math.min(newsData.length - 3, newsStart + direction),
-    )
-    setNewsStart(next)
-    const track = newsRef.current
-    if (track)
-      track.scrollTo({
-        left:
-          next *
-          ((track.firstElementChild?.getBoundingClientRect().width ?? 0) +
-            (window.innerWidth <= 768 ? 28 : 10)),
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "auto"
-          : "smooth",
-      })
-  }
-  return (
-    <div className="home-page" ref={homeRef}>
-      <section
-        className="hero"
-        aria-label="ຂ່າວເດັ່ນ"
-        aria-roledescription="carousel"
-        onFocusCapture={() => setPaused(true)}
-      >
-        {Array.from({ length: 5 }, (_, index) => (
-          <div key={index} className="hero-slide" aria-hidden={index !== slide}
-            style={{ opacity: index === slide ? 1 : 0, visibility: index === slide ? "visible" : "hidden", zIndex: index === slide ? 1 : 0 }}>
-            <AssetPlaceholder id={`home.hero-${index + 1}`} label={`DPO banner ${index + 1}`}
-              width={1440} height={1000} mobileWidth={390} mobileHeight={845} />
-          </div>
-        ))}
-        <button
-          className="hero-arrow prev"
-          onClick={() => changeSlide((slide + 4) % 5)}
-          aria-label="ກ່ອນໜ້າ"
-        >
-          <FontAwesomeIcon icon={faChevronLeft} />
-        </button>
-        <button
-          className="hero-arrow next"
-          onClick={() => changeSlide((slide + 1) % 5)}
-          aria-label="ຕໍ່ໄປ"
-        >
-          <FontAwesomeIcon icon={faChevronRight} />
-        </button>
-        <button
-          className="hero-playback"
-          onClick={() => setPaused(!paused)}
-          aria-label={paused ? "Play slideshow" : "Pause slideshow"}
-          aria-pressed={paused}
-          disabled={reduceMotion}
-        >
-          <FontAwesomeIcon icon={paused ? faPlay : faPause} />
-        </button>
-      </section>
-      <section className="section container home-news">
-        <h1 className="latest-title">ຂ່າວຫຼ້າສຸດ</h1>
-        <div className="news-carousel">
-          <button
-            className="news-arrow prev"
-            aria-label="ຂ່າວກ່ອນໜ້າ"
-            disabled={newsStart === 0}
-            onClick={() => moveNews(-1)}
-          >
-            ‹
-          </button>
-          <div className="news-cards" ref={newsRef}>
-            {newsData.map((news, index) => (
-              <article className="news-card" key={news.slug}>
-                <Link to={`/${news.slug}/`}>
-                  <AssetPlaceholder
-                    id={`home.news-${index + 1}`}
-                    label={news.title}
-                    width={300}
-                    height={300}
-                  />
-                </Link>
-                <div>
-                  <h3>
-                    <Link to={`/${news.slug}/`}>{news.title}</Link>
-                  </h3>
-                  <time>{news.date}</time>
-                </div>
-              </article>
-            ))}
-          </div>
-          <button
-            className="news-arrow next"
-            aria-label="ຂ່າວຕໍ່ໄປ"
-            disabled={newsStart >= newsData.length - 3}
-            onClick={() => moveNews(1)}
-          >
-            ›
-          </button>
-        </div>
-      </section>
-      <section className="section intro-section">
-        <div className="container split">
-          <div>
-            <h2>ກ່ຽວກັບສໍານັກງານປົກປ້ອງເງິນຝາກ</h2>
-            <p>
-              ໃນໄລຍະຜ່ານມາ ສໍານັກງານປົກປ້ອງເງິນຝາກ
-              ເຄື່ອນໄຫວວຽກງານພາຍໃຕ້ກົດລະບຽບວ່າດ້ວຍກອງທຶນປົກປ້ອງຜູ້ຝາກເງິນ ສະບັບເລກທີ 283/ທຫລ,
-              ລົງວັນທີ 30 ສິງຫາ 1999 ຊຶ່ງມີພາລະບົດບາດເປັນເສນາທິການ ໃຫ້ແກ່ກະຊວງການເງິນ ແລະ
-              ທະນາຄານແຫ່ງ ສປປ ລາວ ໃນການປົກປ້ອງສິດຜົນປະໂຫຍດຂອງຜູ້ຝາກເງິນ
-              ທີ່ຝາກໄວ້ຢູ່ນຳທະນາຄານທຸລະກິດ ທີ່ເປັນສະມາຊິກຂອງກອງທຶນປົກປ້ອງຜູ້ຝາກເງິນ. ມາໃນຊຸມປີ 2014
-              ເພື່ອຍົກບົດບາດ ຂອງກອງທຶນປົກປ້ອງຜູ້ຝາກເງິນໃຫ້ສູງຂຶ້ນ
-              ສະນັ້ນຈຶ່ງໄດ້ຍົກ​ລະ​ດັບ​​ກົດ​ລະ​ບຽບດັ່ງກ່າວ​ເປັນດຳ​ລັດວ່າດ້ວຍການປົກປ້ອງເງິນຝາກ
-              ຈຸດປະສົງເພື່ອຮັບປະກັນຄວາມສາມາດໃນການປົກປ້ອງເງິນຝາກໃຫ້ກວ້າງຂຶ້ນ
-              ເພື່ອໃຫ້ສອດຄ່ອງກັບເງື່ອນໄຂ ແລະ ຄວາມຮຽກຮ້ອງຕ້ອງການ ຂອງໜ້າທີ່ວຽກງານ
-              ກໍຄືລະບຽບຫຼັກການທັງພາຍໃນ ແລະ ສາກົນ, ໃນນັ້ນ, ຈຶ່ງໄດ້ປັບປຸງພາລະບົດບາດ ແລະ
-              ໜ້າທີ່ຂອງສໍານັກງານປົກປ້ອງເງິນຝາກເຊັ່ນ: ໂຄງປະກອບການຈັດຕັ້ງ,
-              ເງື່ອນໄຂການເຂົ້າເປັນສະມາຊິກສໍານັກງານປົກປ້ອງເງິນຝາກ
-              ຂອງສະຖາບັນການເງິນຈຸລະພາກທີ່ຮັບເງິນຝາກ, ຂັ້ນຕອນການຈ່າຍເງິນປົກປ້ອງ, ການຊໍາລະສະສາງ,
-              ຄັງປົກປ້ອງເງິນຝາກ, ການຄຸ້ມຄອງ ການກວດກາ ແລະ ອື່ນໆ.
-            </p>
-            <Link to={paths.history} className="button primary">
-              ອ່ານເພີ່ມເຕີມ
-            </Link>
-          </div>
-          <AssetPlaceholder
-            id="home.office-photo"
-            label="ສຳນັກງານ ສປງ"
-            width={570}
-            height={380}
-            mobileWidth={358}
-            mobileHeight={239}
-          />
-        </div>
-      </section>
-      <section
-        className="protection"
-        style={{
-          backgroundImage: `url(${homeAssets["protection.background"]?.src})`,
-        }}
-      >
-        <div className="container split">
-          <div className="protection-copy">
-            <h2>ສຳນັກງານປົກປ້ອງເງິນຝາກ</h2>
-            <h4>Deposit Protection office of Lao PDR.</h4>
-            <div className="stat-grid">
-              <div>
-                <strong aria-label="100ລ້ານກີບ">
-                  <span
-                    className="counter-value"
-                    data-count-target="100"
-                    aria-hidden="true"
-                  >
-                    100
-                  </span>
-                  ລ້ານກີບ
-                </strong>
-                <span>ວົງເງິນປົກປ້ອງ</span>
-              </div>
-              <div>
-                <strong aria-label="35ທະນາຄານ">
-                  <span
-                    className="counter-value"
-                    data-count-target="35"
-                    aria-hidden="true"
-                  >
-                    35
-                  </span>
-                  ທະນາຄານ
-                </strong>
-                <span>ສະມາຊິກ ສປງ ທີ່ເປັນທະນາຄານທຸລະກິດ</span>
-              </div>
-              <div>
-                <strong aria-label="6ສະຖາບັນ">
-                  <span
-                    className="counter-value"
-                    data-count-target="6"
-                    aria-hidden="true"
-                  >
-                    6
-                  </span>
-                  ສະຖາບັນ
-                </strong>
-                <span>ສະມາຊິກ ສປງ ທີ່ເປັນສະຖາບັນການເງິນຈຸລະພາກທີ່ຮັບເງິນຝາກ</span>
-              </div>
-            </div>
-          </div>
-          <AssetPlaceholder
-            id="home.protection-poster"
-            label="ໂພສະເຕີ ການປົກປ້ອງເງິນຝາກ"
-            width={570}
-            height={808}
-            mobileWidth={358}
-            mobileHeight={508}
-          />
-        </div>
-      </section>
-      <section className="container home-members">
-        <AssetPlaceholder
-          id="home.member-logo-montage"
-          label="Membership logos 2026"
-          width={1170}
-          height={560}
-          mobileWidth={358}
-          mobileHeight={171}
-        />
-      </section>
-    </div>
-  )
-}
-
-function SectionHeading({
-  eyebrow,
-  title,
-  align = "center",
-}: {
-  eyebrow?: string
-  title: string
-  align?: "center" | "left"
-}) {
-  return (
-    <div className={`section-heading ${align}`}>
-      {eyebrow && <span>{eyebrow}</span>}
-      <h2>{title}</h2>
-      <i />
-    </div>
-  )
-}
-
-function InstitutionalPage({ type }: { type: "duties" | "history" | "about" }) {
-  const isDuties = type === "duties"
-  const title = isDuties ? "ພາລະບົດບາດ ແລະ ໜ້າທີ່" : type === "history" ? "ປະຫວັດຄວາມເປັນມາ" : "ກ່ຽວກັບ"
-  if (type !== "about") return <>
-    <PageTitle title={title} />
-    <article className={`section container institutional-source-page ${isDuties ? "duties-page" : "history-page"}`}>
-      <h2 className="institutional-heading">{isDuties ? title : "ປະຫວັດຄວາມເປັນມາ ສຳນັກງານປົກປ້ອງເງິນຝາກ"}</h2>
-      {isDuties ? <>
-        <AssetPlaceholder id="institutional.duties.photo-1" label="ຮູບໝູ່ ສປງ" width={1170} height={600} mobileWidth={358} mobileHeight={239} />
-        <div className="duties-copy"><p>{dutiesContent.intro}</p><ul>{dutiesContent.items.map((text) => <li key={text}>{text}</li>)}</ul></div>
-      </> : <div className="history-copy">
-        {pageContent.history.slice(1).map((block, index) => block.id ?
-          <AssetPlaceholder key={block.id} id={block.id} label={block.id.endsWith("1") ? "ອາຄານສຳນັກງານເກົ່າ" : "ອາຄານສຳນັກງານປັດຈຸບັນ"} width={1170} height={780} mobileWidth={358} mobileHeight={239} /> :
-          <p key={index}>{block.text}</p>)}
-      </div>}
-      <PhoneLink className="faq-phone phone-cta-link" label="ເບີໂທ:" />
-    </article>
-  </>
-  return <>
-    <PageTitle title={title} />
-    <article className="section container article-body">
-      <SectionHeading title="ຮູ້ຈັກອົງການປົກປ້ອງເງິນຝາກ" />
-      <AssetPlaceholder id="institutional.about.photo-1" label="Historical office photo" width={770} height={513} mobileWidth={358} mobileHeight={239} />
-      {[1, 2, 3, 4].map((item) => <div className="pending-copy" key={item}>
-        <h3>ຂໍ້ມູນສ່ວນທີ {item}</h3>
-        <p>ພື້ນທີ່ໂຄງສ້າງສຳລັບເນື້ອຫາພາສາລາວຕາມຕົ້ນສະບັບ. ຂໍ້ຄວາມທາງການສະບັບເຕັມຍັງບໍ່ມີໃນຊຸດຂໍ້ມູນ ແລະ ຈະບໍ່ຖືກສ້າງຂຶ້ນໃໝ່.</p>
-        {item === 2 && <AssetPlaceholder id="institutional.about.photo-2" label="Office building photo" width={770} height={513} mobileWidth={358} mobileHeight={239} />}
-      </div>)}
-      <Link to="/dpo-organization-chart/" className="wide-cta">ເບິ່ງໂຄງຮ່າງການຈັດຕັ້ງ →</Link>
-    </article>
-  </>
-}
-
-function Accordion({
-  items,
-  initial = -1,
-  faq = false,
-  board = false,
-}: {
-  items: string[]
-  initial?: number
-  faq?: boolean
-  board?: boolean
-}) {
-  const [open, setOpen] = useState<number[]>(initial >= 0 ? [initial] : [])
-  const toggle = (index: number) =>
-    setOpen((items) =>
-      items.includes(index)
-        ? items.filter((item) => item !== index)
-        : [...items, index],
-    )
-  return (
-    <div className={`accordion ${board ? "board-accordion" : ""}`}>
-      {items.map((item, index) => (
-        <div className="accordion-item" key={`${item}-${index}`}>
-          <button
-            onClick={() => toggle(index)}
-            aria-expanded={open.includes(index)}
-            aria-controls={`panel-${faq ? "faq" : "org"}-${index}`}
-          >
-            <span>
-              {faq ? `${index + 1}. ` : ""}
-              {item}
-            </span>
-            {board ? <FontAwesomeIcon icon={faChevronDown} className={open.includes(index) ? "board-chevron open" : "board-chevron"} aria-hidden="true" /> : <b aria-hidden="true">{open.includes(index) ? "−" : "+"}</b>}
-          </button>
-          {open.includes(index) && (
-            <div
-              id={`panel-${faq ? "faq" : "org"}-${index}`}
-              className="accordion-panel"
-            >
-              {faq ? (
-                <p>ເນື້ອຫາຄຳຕອບລໍຖ້າການຢືນຢັນ — Answer content pending.</p>
-              ) : board ? (
-                <AssetPlaceholder id={`organization.board.panel-${index + 1}.chart`} label={item} width={1170} height={500} mobileWidth={358} mobileHeight={160} />
-              ) : (
-                <div className="org-panel">
-                  <AssetPlaceholder
-                    id={`organization.panel-${index + 1}.chart`}
-                    label="Organization chart"
-                    width={770}
-                    height={500}
-                    mobileWidth={358}
-                    mobileHeight={233}
-                  />
-                  <AssetPlaceholder
-                    id={`organization.panel-${index + 1}.portrait`}
-                    label="Organization portrait"
-                    width={160}
-                    height={200}
-                    mobileWidth={128}
-                    mobileHeight={160}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function OrganizationItem({ group, item, index, open, onToggle }: { group: "board" | "party" | "state"; item: string; index: number; open: boolean; onToggle: () => void }) {
-  const itemRef = useRef<HTMLDivElement>(null)
-  const panelRef = useRef<HTMLDivElement>(null)
-  const { contextSafe } = useGSAP({ scope: itemRef })
-  useGSAP(() => {
-    const panel = panelRef.current
-    if (!panel) return
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    gsap.to(panel, {
-      height: open ? "auto" : 0, duration: reduced ? 0 : 0.4,
-      ease: "power2.inOut", overwrite: "auto",
-      onComplete: open ? contextSafe(() => {
-        const header = document.querySelector<HTMLElement>(".sticky-inner")
-        const item = itemRef.current
-        if (!item) return
-        gsap.to(window, {
-          scrollTo: { y: item, offsetY: (header?.offsetHeight ?? 0) + 12, autoKill: true },
-          duration: reduced ? 0 : 0.55, ease: "power2.out", overwrite: "auto",
-        })
-      }) : undefined,
-    })
-  }, { scope: itemRef, dependencies: [open] })
-  return <div className="accordion-item" ref={itemRef}>
-    <button onClick={onToggle} aria-expanded={open} aria-controls={`${group}-panel-${index}`}>
-      <span>{item}</span><FontAwesomeIcon icon={faChevronDown} className={open ? "board-chevron open" : "board-chevron"} aria-hidden="true" />
-    </button>
-    <div id={`${group}-panel-${index}`} ref={panelRef} className="board-panel-wrap" aria-hidden={!open} inert={!open}>
-      <div className="accordion-panel">{Object.keys(homeAssets)
-        .filter((id) => id === `organization.${group}.panel-${index + 1}.chart` || id.startsWith(`organization.${group}.panel-${index + 1}.chart-`))
-        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-        .map((id) => <AssetPlaceholder key={id} id={id} label={item} width={1170} height={500} mobileWidth={358} mobileHeight={160} />)}
-      </div>
-    </div>
+  const banners = home.data?.banners ?? []
+  useEffect(() => { if (paused || banners.length < 2 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; const timer = window.setInterval(() => setSlide(current => (current + 1) % banners.length), 8000); return () => window.clearInterval(timer) }, [paused, banners.length])
+  const banner = banners[slide % (banners.length || 1)]
+  return <div className="home-page">
+    {banner && <section className="hero" aria-label="ປ້າຍໜ້າຫຼັກ" onFocusCapture={() => setPaused(true)}>{banners.map((item, index) => <div key={item.id} className={`hero-slide ${index === slide % banners.length ? "is-active" : ""}`} aria-hidden={index !== slide % banners.length} inert={index !== slide % banners.length}>{item.linkUrl ? <a href={item.linkUrl}><img className="api-hero-image" src={mediaUrl(item.imageUrl)} alt={item.title} /></a> : <img className="api-hero-image" src={mediaUrl(item.imageUrl)} alt={item.title} />}</div>)}{banners.length > 1 && <><button className="hero-arrow prev" onClick={() => setSlide((slide + banners.length - 1) % banners.length)} aria-label="ກ່ອນໜ້າ"><FontAwesomeIcon icon={faChevronLeft} /></button><button className="hero-arrow next" onClick={() => setSlide((slide + 1) % banners.length)} aria-label="ຕໍ່ໄປ"><FontAwesomeIcon icon={faChevronRight} /></button><button className="hero-playback" onClick={() => setPaused(!paused)} aria-label={paused ? "ເລີ່ມ" : "ຢຸດ"}><FontAwesomeIcon icon={paused ? faPlay : faPause} /></button></>}</section>}
+    {(home.loading || home.error) && <section className="section container"><ApiState loading={home.loading} error={home.error} /></section>}
+    <section className="section container home-news"><h1 className="latest-title">ຂ່າວຫຼ້າສຸດ</h1><div className="news-carousel"><button className="news-arrow prev" aria-label="ຂ່າວກ່ອນໜ້າ" onClick={() => newsTrack.current?.scrollBy({ left: -(newsTrack.current.clientWidth / 3), behavior: "smooth" })}>‹</button><div className="news-cards" ref={newsTrack}>{news.data?.data.map(item => <NewsCard key={item.id} item={item} />)}</div><button className="news-arrow next" aria-label="ຂ່າວຕໍ່ໄປ" onClick={() => newsTrack.current?.scrollBy({ left: newsTrack.current.clientWidth / 3, behavior: "smooth" })}>›</button></div><ApiState loading={news.loading} error={news.error} empty={news.data?.data.length === 0} /><p className="api-more"><Link to={paths.news} className="button primary">ຂ່າວທັງໝົດ →</Link></p></section>
+    {home.data?.intro && (home.data.intro.title || home.data.intro.content || home.data.intro.imageUrl) && <section className="section intro-section"><div className="container split"><div><h2>{home.data.intro.title}</h2><p className="api-prose">{home.data.intro.content}</p><Link to={paths.history} className="button primary">ອ່ານເພີ່ມເຕີມ</Link></div>{home.data.intro.imageUrl && <img className="api-intro-image" src={mediaUrl(home.data.intro.imageUrl)} alt="" />}</div></section>}
+    {protection.data && <section className="protection"><div className="container split"><div className="protection-copy"><h2>{protection.data.title}</h2><h4>Deposit Protection office of Lao PDR.</h4><div className="stat-grid">{protection.data.content.split("\n").filter(Boolean).map((line, index) => { const [value, label] = line.split("|"); return <div key={index}><strong><CountUp value={value} /></strong><span>{label}</span></div> })}</div></div>{protection.data.imageUrl && <img className="api-protection-poster" src={mediaUrl(protection.data.imageUrl)} alt="ຂໍ້ມູນການປົກປ້ອງເງິນຝາກ" loading="lazy" />}</div></section>}
+    {members.data?.imageUrl && <section className="container home-members"><img className="api-members-image" src={mediaUrl(members.data.imageUrl)} alt={members.data.title} loading="lazy" /></section>}
   </div>
 }
-
-function OrganizationAccordion({ group }: { group: "board" | "party" | "state" }) {
-  const [open, setOpen] = useState<number | null>(null)
-  return <div className="accordion board-accordion">{organization[group].map((item, index) =>
-    <OrganizationItem key={item} group={group} item={item} index={index} open={open === index} onToggle={() => setOpen((current) => current === index ? null : index)} />
-  )}</div>
+const documentCategories: Record<string, { category: string; title: string }> = {
+  [paths.decrees]: { category: "decree", title: "ດຳລັດ" }, [paths.decisions]: { category: "agreement", title: "ຂໍ້ຕົກລົງ" }, [paths.notices]: { category: "notice", title: "ແຈ້ງການ" }, [paths.forms]: { category: "form", title: "ແບບພິມ" }, [paths.guidance]: { category: "guideline", title: "ບົດແນະນໍາ" }, "/fsnp/": { category: "fsnp", title: "FSNP" }, [paths.information]: { category: "general", title: "ຂໍ້ມູນ" },
 }
-
-function OrganizationPage({ type }: { type: "board" | "party" | "state" }) {
-  const titles = {
-    board: "ໂຄງຮ່າງການຈັດຕັ້ງ ສະພາບໍລິຫານ",
-    party: "ໂຄງຮ່າງການຈັດຕັ້ງ ສາຍພັກ ແລະ ອົງການມະຫາຊົນ",
-    state: "ໂຄງຮ່າງການຈັດຕັ້ງ ສາຍລັດ",
-  }
-  const headings = {
-    board: "ໂຄງຮ່າງການຈັດຕັ້ງ ສະພາບໍລິຫານ ຕັ້ງແຕ່ ປີ 1999 ຮອດ ປະຈຸບັນ",
-    party: "ໂຄງຮ່າງການຈັດຕັ້ງສາຍພັກ ແລະ ອົງການຈັດຕັ້ງມະຫາຊົນປະຈຸບັນຂອງ ສປງ",
-    state: "ໂຄງຮ່າງການຈັດຕັ້ງ ສາຍລັດ ຂອງ ສປງ",
-  }
+function Pagination({ page, totalPages, setPage }: { page: number; totalPages: number; setPage: (n: number) => void }) {
+  if (totalPages <= 1) return null
+  return <nav className="api-pagination" aria-label="ປ່ຽນໜ້າ"><button disabled={page <= 1} onClick={() => setPage(page - 1)}>← ກ່ອນໜ້າ</button><span>{page} / {totalPages}</span><button disabled={page >= totalPages} onClick={() => setPage(page + 1)}>ຕໍ່ໄປ →</button></nav>
+}
+function DocumentsPage({ category, title }: { category: string; title: string }) {
+  const [query, setQuery] = useState(""); const [term, setTerm] = useState(""); const [page, setPage] = useState(1)
+  const params = new URLSearchParams({ category, page: String(page), limit: "12" }); if (term) params.set("q", term)
+  const result = useApi<List<Document>>(`/documents?${params}`)
+  if (["decree", "agreement", "notice", "form", "guideline", "fsnp", "general"].includes(category)) return <><PageTitle title={title} /><section className="section container decrees-page"><h1>{category === "fsnp" ? "Lao PDR Financial Sector Safety Net Strengthening" : category === "general" ? "ເອກະສານ ຂໍ້ມູນຕ່າງໆ" : `ເອກະສານໄຟລ໌ ${title}`}</h1>{category !== "fsnp" && <form className="decrees-search decree-search-form" onSubmit={event => { event.preventDefault(); setTerm(query.trim()); setPage(1) }}><FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" /><input type="search" aria-label="ຄົ້ນຫາເອກະສານ" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search files..." /><button type="submit">ຄົ້ນຫາ</button></form>}<div className="decrees-category">» {title}</div><div className="decrees-layout"><div className="decrees-tree" aria-hidden="true" /><div><div className="decrees-grid">{result.data?.data.map(file => <article className="decree-card" key={file.id}><img className="decree-icon" src={file.fileType?.toLowerCase() === "xlsx" ? "/assets/dpo/excel.png" : "/assets/dpo/pdf.svg"} alt="" /><div className="decree-content"><h2>{file.title}</h2><dl>{file.fileSize != null && <div><dt>Size:</dt><dd>{(file.fileSize / 1048576).toFixed(2)} MB</dd></div>}{file.documentDate && <div><dt>Date:</dt><dd>{date(file.documentDate)}</dd></div>}</dl></div>{file.fileUrl && <div className="decree-actions"><a className="decree-download" href={mediaUrl(file.fileUrl)} target="_blank" rel="noreferrer">ດາວໂຫລດ <FontAwesomeIcon icon={faCloudArrowDown} aria-hidden="true" /></a>{file.fileType?.toLowerCase() !== "xlsx" && <a className="decree-preview" href={mediaUrl(file.fileUrl)} target="_blank" rel="noreferrer">ເປີດເບິ່ງ <FontAwesomeIcon icon={faExpand} aria-hidden="true" /></a>}</div>}</article>)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></div></div></section></>
+  return <><PageTitle title={title} /><section className="section container decrees-page"><h1>{title}</h1><form className="decrees-search" onSubmit={event => { event.preventDefault(); setTerm(query.trim()); setPage(1) }}><FontAwesomeIcon icon={faMagnifyingGlass} /><input aria-label="ຄົ້ນຫາເອກະສານ" value={query} onChange={event => setQuery(event.target.value)} placeholder="ຄົ້ນຫາເອກະສານ..." /><button type="submit">ຄົ້ນຫາ</button></form><div className="decrees-grid">{result.data?.data.map(file => <article className="decree-card" key={file.id}><img className="decree-icon" src={file.fileType?.toLowerCase() === "xlsx" ? "/assets/dpo/excel.png" : "/assets/dpo/pdf.svg"} alt="" /><div className="decree-content"><h2>{file.title}</h2><p>{date(file.documentDate)} {file.fileSize ? ` · ${(file.fileSize / 1024).toFixed(0)} KB` : ""}</p></div>{file.fileUrl && <div className="decree-actions"><a className="decree-download" href={mediaUrl(file.fileUrl)} target="_blank" rel="noreferrer">ເປີດໄຟລ໌ <FontAwesomeIcon icon={faCloudArrowDown} /></a></div>}</article>)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></section></>
+}
+function BilateralPage() {
+  const [page, setPage] = useState(1)
+  const result = useApi<List<News>>(`/news?category=international&page=${page}&limit=5`)
+  return <><PageTitle title="ການຮ່ວມມືສອງຝ່າຍ" /><section className="section container editorial-feed bilateral-feed">{result.data?.data.map(item => <article key={item.id}>{item.coverImageUrl && <Link to={`/${item.slug}/`}><img className="bilateral-image" src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" /></Link>}<div><h2><Link to={`/${item.slug}/`}>{item.title}</Link></h2>{item.publishedAt && <time>{date(item.publishedAt)}</time>}{item.excerpt && <p>{item.excerpt}</p>}<Link className="button primary" to={`/${item.slug}/`}>ອ່ານເພີ່ມເຕີມ</Link></div></article>)}<ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><div className="bilateral-page-pagination"><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></div></section></>
+}
+function NewsListPage({ international = false, initialPage = 1, titleOverride }: { international?: boolean; initialPage?: number; titleOverride?: string }) {
+  const [page, setPage] = useState(initialPage)
+  const result = useApi<List<News>>(`/news?page=${page}&limit=${international ? 9 : 5}${international ? "&category=international" : ""}`)
+  const title = titleOverride || (international ? "ການຮ່ວມມືສາກົນ" : "ຂ່າວສານ")
+  if (!international) return <><PageTitle title={title} /><section className="section container content-sidebar cooperation-archive news-archive-page"><div><div className="archive-list">{result.data?.data.map(item => <article key={item.id}>{item.coverImageUrl && <Link to={`/${item.slug}/`} className="news-archive-image"><img src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" /></Link>}<div><h2><Link to={`/${item.slug}/`}>{item.title}</Link></h2>{item.publishedAt && <time>{date(item.publishedAt)}</time>}{item.excerpt && <p>{item.excerpt}</p>}<Link className="button primary" to={`/${item.slug}/`}>ອ່ານເພີ່ມເຕີມ</Link></div></article>)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></div><NewsArchiveSidebar /></section></>
+  return <><PageTitle title={title} /><section className="section container"><div className="api-news-grid">{result.data?.data.map(item => <NewsCard key={item.id} item={item} />)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></section></>
+}
+function NewsArchiveSidebar({ showSearch = true }: { showSearch?: boolean } = {}) {
+  const news = useApi<List<News>>("/news?limit=5")
+  const partners = useApi<List<Partner>>("/partners?limit=5")
+  return <aside className="cooperation-sidebar">{showSearch && <div className="cooperation-widget"><SearchBox /></div>}<div className="cooperation-widget"><h3>ຂ່າວສານ ອື່ນໆ</h3>{news.data?.data.map(item => <Link className="cooperation-recent" key={item.id} to={`/${item.slug}/`}>{item.coverImageUrl && <img src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" />}<strong>{item.title}</strong>{item.publishedAt && <time>{date(item.publishedAt)}</time>}</Link>)}<ApiState loading={news.loading} error={news.error} /></div>{!!partners.data?.data.length && <div className="cooperation-widget cooperation-partners"><h3>ໜ້າເຊື່ອມຕໍ່ເວັບຕ່າງໆ</h3>{partners.data.data.filter(item => item.logoUrl).map(item => <a key={item.id} href={item.url} target="_blank" rel="noreferrer"><img src={mediaUrl(item.logoUrl)} alt={item.name} loading="lazy" /></a>)}</div>}</aside>
+}
+function ArticlePage({ slug }: { slug: string }) {
+  const result = useApi<News>(`/news/${encodeURIComponent(slug)}`)
+  const article = result.data
+  const paragraphs = article?.content?.split(/\n\s*\n/).filter(paragraph => paragraph.trim()) ?? []
   return <>
-    <PageTitle title={titles[type]} />
-    <section className="section container narrow board-page">
-      <h2 className="board-heading"><span><FontAwesomeIcon icon={faCircleQuestion} /></span>{headings[type]}</h2>
-      {type === "state" && <AssetPlaceholder id="organization.state.overview" label={headings.state} width={1080} height={529} mobileWidth={358} mobileHeight={175} className="state-overview" />}
-      <OrganizationAccordion key={type} group={type} />
-      {type === "state" && <AssetPlaceholder id="organization.state.poster" label="ສຳນັກງານປົກປ້ອງເງິນຝາກ" width={663} height={1024} mobileWidth={358} mobileHeight={553} className="state-poster" />}
-    </section>
-  </>
-}
-
-const libraryCounts: Record<string, number> = {
-  decrees: 3,
-  decisions: 4,
-  notices: 8,
-  forms: 2,
-  guidance: 4,
-  fsnp: 8,
-  information: 6,
-}
-
-const libraryTitles: Record<string, string> = {
-  decrees: "ດຳລັດ",
-  decisions: "ຂໍ້ຕົກລົງ",
-  notices: "ແຈ້ງການ",
-  forms: "ແບບພິມ",
-  guidance: "ບົດແນະນໍາ ແລະ ຄໍາແນະນໍາ",
-  fsnp: "Lao PDR Financial Sector Safety Net Strengthening",
-  information: "ຂໍ້ມູນ",
-}
-
-type LegalCategory = "decrees" | "decisions" | "notices" | "forms" | "guidance" | "fsnp" | "information"
-type LegalFile = { id: string; title: string; download: string; local?: string; preview?: string; size: string; hits: string; dates: string[]; ext?: string }
-
-function DecreesPage({ type }: { type: LegalCategory }) {
-  const [query, setQuery] = useState("")
-  const term = query.trim().toLocaleLowerCase()
-  const title = libraryTitles[type]
-  const documents: LegalFile[] = type === "decrees" ? decrees : type === "fsnp" ? fsnpDocuments : type === "information" ? informationDocuments.map((file) => ({ ...file, download: `/assets/dpo/documents/${file.id}.pdf`, local: `/assets/dpo/documents/${file.id}.pdf` })) : legalDocuments[type]
-  const files = documents.filter((file) => file.title.toLocaleLowerCase().includes(term))
-  return <>
-    <PageTitle title={title} />
-    <section className="section container decrees-page">
-      <h1>{type === "fsnp" ? title : type === "information" ? "ເອກະສານ ຂໍ້ມຸນຕ່າງໆ" : `ເອກະສານໄຟລ໌ ${title}`}</h1>
-      {type !== "fsnp" && <div className="decrees-search">
-        <label htmlFor="decrees-search" className="sr-only">ຄົ້ນຫາເອກະສານ</label>
-        <FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" />
-        <input id="decrees-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search files..." type="search" />
-      </div>}
-      <div className="decrees-category">» {type === "fsnp" ? "FSNP" : title}</div>
-      <div className="decrees-layout">
-        <div className="decrees-tree" aria-hidden="true" />
-        {files.length ? <div className="decrees-grid">{files.map((file) =>
-          <article key={file.id} className="decree-card">
-            <img className="decree-icon" src={file.ext === "xlsx" ? "/assets/dpo/excel.png" : "/assets/dpo/pdf.svg"} alt="" />
-            <div className="decree-content">
-              <h2><a href={file.local || file.download} download={file.local ? true : undefined}>{file.title}</a></h2>
-              <dl>
-                <div><dt>Size:</dt><dd>{file.size}</dd></div>
-                <div title="Captured 5 November 2026"><dt>Hits:</dt><dd>{file.hits}</dd></div>
-                <div><dt>Date added:</dt><dd>{file.dates[0]}</dd></div>
-                <div><dt>Date modified:</dt><dd>{file.dates[1]}</dd></div>
-              </dl>
-            </div>
-            <div className="decree-actions">
-              <a className="decree-download" href={file.local || file.download} download={file.local ? true : undefined}>ດາວໂຫລດ <FontAwesomeIcon icon={faCloudArrowDown} aria-hidden="true" /></a>
-              {file.ext !== "xlsx" && <a className="decree-preview" href={file.local || file.preview} target="_blank" rel="noopener noreferrer">ເປີດເບີ່ງ <FontAwesomeIcon icon={faExpand} aria-hidden="true" /><span className="sr-only"> (opens in a new tab)</span></a>}
-            </div>
-          </article>
-        )}</div> : <p className="decrees-empty" role="status">ບໍ່ພົບເອກະສານ</p>}
+    <PageTitle title={article?.title || "ຂ່າວສານ"} />
+    <section className="section container content-sidebar cooperation-archive news-archive-page dporaw-page news-detail-page">
+      <div>
+      <ApiState loading={result.loading} error={result.error} />
+      {article && <article className="detail-article" aria-labelledby="news-detail-title">
+        <h1 id="news-detail-title" className="sr-only">{article.title}</h1>
+        {article.coverImageUrl && <img className="dporaw-photo" src={mediaUrl(article.coverImageUrl)} alt={article.title} />}
+        <div className="dporaw-copy">
+          {paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+          {article.gallery?.filter(image => image !== article.coverImageUrl).map((image, index) => <img className="dporaw-photo" key={image} src={mediaUrl(image)} alt={`${article.title} — ${index + 2}`} loading="lazy" />)}
+          {article.publishedAt && <time dateTime={article.publishedAt}>{date(article.publishedAt)}</time>}
+        </div>
+        <p className="dporaw-category"><Link to={paths.news}>ຂ່າວສານ</Link></p>
+        {!!article.related?.length && <section aria-labelledby="news-related-title"><h2 id="news-related-title" className="iadi-related-title">ຂ່າວທີ່ກ່ຽວຂ້ອງ...</h2><div className="api-news-grid news-detail-related">{article.related.map(item => <NewsCard key={item.id} item={item} />)}</div></section>}
+      </article>}
       </div>
+      <NewsArchiveSidebar />
     </section>
   </>
 }
-
-function DocumentLibrary({ type }: { type: keyof typeof libraryCounts }) {
-  const [query, setQuery] = useState("")
-  const [preview, setPreview] = useState<number | null>(null)
-  const [status, setStatus] = useState("")
-  const docs = Array.from({ length: libraryCounts[type] }, (_, index) => ({
-    title:
-      index === 0 && type === "decrees"
-        ? "DECREE ON DEPOSIT PROTECTION 329"
-        : `${libraryTitles[type]} — ເອກະສານ ${String(index + 1).padStart(2, "0")}`,
-    index,
-  })).filter((doc) => doc.title.toLowerCase().includes(query.toLowerCase()))
-  useEffect(() => {
-    if (preview === null) return
-    const close = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") setPreview(null)
-    }
-    window.addEventListener("keydown", close)
-    return () => window.removeEventListener("keydown", close)
-  }, [preview])
-  return (
-    <>
-      <PageTitle title={libraryTitles[type]} />
-      <section className="section container">
-        <div className="library-search">
-          <label htmlFor="file-search">ຄົ້ນຫາເອກະສານ</label>
-          <input
-            id="file-search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search files..."
-          />
-        </div>
-        <div className="library-layout">
-          <aside className="category-tree">
-            <h3>ໝວດໝູ່ເອກະສານ</h3>
-            <button className="selected">▾ {libraryTitles[type]}</button>
-            <button>› ປີ 2026</button>
-            <button>› ປີ 2025</button>
-            <button>› ເອກະສານເກົ່າ</button>
-          </aside>
-          <div>
-            {status && (
-              <div className="inline-status" role="status">
-                {status}
-              </div>
-            )}
-            <div className="document-grid">
-              {docs.map((doc) => (
-                <article className="document-card" key={doc.index}>
-                  <div className="pdf-mark">PDF</div>
-                  <div>
-                    <h3>{doc.title}</h3>
-                    <dl>
-                      <div>
-                        <dt>Size</dt>
-                        <dd>Pending</dd>
-                      </div>
-                      <div>
-                        <dt>Hits</dt>
-                        <dd>—</dd>
-                      </div>
-                      <div>
-                        <dt>Date added</dt>
-                        <dd>Pending</dd>
-                      </div>
-                      <div>
-                        <dt>Date modified</dt>
-                        <dd>Pending</dd>
-                      </div>
-                    </dl>
-                    <div className="card-actions">
-                      <button
-                        onClick={() =>
-                          setStatus(
-                            "File asset pending — no download was started.",
-                          )
-                        }
-                      >
-                        ດາວໂຫຼດ
-                      </button>
-                      <button
-                        className="secondary"
-                        onClick={() => setPreview(doc.index)}
-                      >
-                        ເບິ່ງຕົວຢ່າງ
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-            {!docs.length && <PendingState title="ບໍ່ພົບເອກະສານ" />}
-          </div>
-        </div>
-      </section>
-      {preview !== null && (
-        <div
-          className="modal-backdrop"
-          role="presentation"
-          onMouseDown={() => setPreview(null)}
-        >
-          <div
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="preview-title"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="modal-head">
-              <h2 id="preview-title">ຕົວຢ່າງເອກະສານ</h2>
-              <button onClick={() => setPreview(null)} aria-label="ປິດ">
-                ×
-              </button>
-            </div>
-            <AssetPlaceholder
-              id={`${type}.document-${preview + 1}.pdf-preview`}
-              label="PDF preview"
-              width={770}
-              height={600}
-              mobileWidth={358}
-              mobileHeight={400}
-            />
-          </div>
-        </div>
-      )}
-    </>
-  )
-}
-
-function Bilateral() {
-  return (
-    <>
-      <PageTitle title="ການຮ່ວມມືສອງຝ່າຍ" />
-      <section className="section container editorial-feed bilateral-feed">
-        {bilateralArticles.map((article, index) => (
-          <article key={article.id}>
-            <a href={index === 0 ? "/iadi-earc-aprc/" : article.url}>
-            <AssetPlaceholder
-              id={`bilateral.article-${index + 1}.photo`}
-              label="Bilateral article photo"
-              width={570}
-              height={380}
-              mobileWidth={358}
-              mobileHeight={239}
-            />
-            </a>
-            <div>
-              <h2><a href={index === 0 ? "/iadi-earc-aprc/" : article.url}>{article.title}</a></h2>
-              <time>{article.date}</time>
-              <p>{article.excerpt.split("ອ່ານເພີ່ມເຕີມ")[0].trim()}</p>
-              <a className="button primary" href={index === 0 ? "/iadi-earc-aprc/" : article.url}>ອ່ານເພີ່ມເຕີມ</a>
-            </div>
-          </article>
-        ))}
-        <nav className="bilateral-pagination" aria-label="ການແບ່ງໜ້າໂພສ">
-          <span aria-current="page">1</span><span>2</span><span>...</span><span>4</span><span aria-hidden="true">»</span>
-        </nav>
-      </section>
-    </>
-  )
-}
-
-function CooperationArchive() {
-  return (
-    <>
-      <PageTitle title="ການຮ່ວມມືສາກົນ" />
-      <section className="section container content-sidebar cooperation-archive">
-        <div>
-          <div className="cooperation-list">
-            {bilateralArticles.slice(0, 4).map((article, index) => (
-              <article key={article.id}>
-                <div className="cooperation-image">
-                  <img src={homeAssets[`bilateral.article-${index + 1}.photo`]?.src} alt={article.title} />
-                  <time>{article.date}</time>
-                </div>
-                <div>
-                  <h2>{article.title}</h2>
-                  <p>{index === 0 ? `${article.excerpt.split("ອ່ານເພີ່ມເຕີມ")[0].trim().slice(0, 200)}…` : "..."}</p>
-                  <span className="button primary">ອ່ານເພີ່ມເຕີມ</span>
-                </div>
-              </article>
-            ))}
-          </div>
-          <nav className="bilateral-pagination" aria-label="ການແບ່ງໜ້າໂພສ">
-            <span aria-current="page">1</span><span>2</span><span>...</span><span>5</span><span aria-hidden="true">»</span>
-          </nav>
-        </div>
-        <CooperationSidebar />
-      </section>
-    </>
-  )
-}
-
-function CooperationSidebar() {
-  return (
-        <aside className="cooperation-sidebar">
-          <div className="cooperation-widget"><SearchBox /></div>
-          {[5, 3].map((count) => (
-            <div key={count}>
-            {count === 3 && <div className="cooperation-widget"><SearchBox /></div>}
-            <div className="cooperation-widget">
-              <h3>ຂ່າວສານ ອື່ນໆ</h3>
-              {newsData.slice(0, count).map((news, index) => (
-                <div className="cooperation-recent" key={news.slug}>
-                  <img src={homeAssets[`sidebar.news-${index + 1}`]?.src} alt="" />
-                  <strong>{news.title}</strong>
-                  <time>◷ {news.date}</time>
-                </div>
-              ))}
-            </div>
-            </div>
-          ))}
-          <div className="cooperation-widget cooperation-partners">
-            <h3>ໜ້າເຊື່ອມຕໍ່ເວັບຕ່າງໆ</h3>
-            {[1, 2, 3, 4, 5].map((number) => <img key={number} src={homeAssets[`sidebar.partner-${number}`]?.src} alt={homeAssets[`sidebar.partner-${number}`]?.alt} />)}
-          </div>
-        </aside>
-  )
-}
-
 function IadiArticle() {
-  const [selectedImage, setSelectedImage] = useState<number | null>(null)
+  const result = useApi<News>("/news/iadi-earc-aprc")
+  const recent = useApi<List<News>>("/news?limit=5")
+  const partners = useApi<List<Partner>>("/partners?limit=5")
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
   useEffect(() => {
-    if (selectedImage === null) return
+    if (!selectedImage) return
     const close = (event: globalThis.KeyboardEvent) => { if (event.key === "Escape") setSelectedImage(null) }
     window.addEventListener("keydown", close)
     return () => window.removeEventListener("keydown", close)
   }, [selectedImage])
-  return (
-    <>
-      <PageTitle title={bilateralArticles[0].title} />
-      <section className="section container content-sidebar cooperation-archive iadi-page">
-        <article>
-          <div className="iadi-gallery">
-            {[1, 2, 3, 4].map((number) => (
-              <button key={number} onClick={() => setSelectedImage(number)} aria-label={`ເບິ່ງຮູບ ${number}`}>
-                <img src={`/assets/dpo/iadi-${number}.jpeg`} alt={`${bilateralArticles[0].title} ${number}`} />
-              </button>
-            ))}
-          </div>
-          <div className="iadi-copy">{iadiParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</div>
-          <div className="iadi-categories"><Link to={paths.cooperationCategory}>ການຮ່ວມມືສາກົນ</Link><Link to={paths.news}>ຂ່າວສານ</Link></div>
-          <h2 className="iadi-related-title">ຂ່າວທີ່ກ່ຽວຂ້ອງ...</h2>
-          <div className="iadi-related">{newsData.slice(0, 3).map((news, index) => (
-            <Link key={news.slug} to={`/${news.slug}/`}>
-              <img src={homeAssets[`home.news-${index + 1}`]?.src} alt="" />
-              <strong>{news.title}</strong><span>ຂ່າວສານ</span>
-            </Link>
-          ))}</div>
-        </article>
-        <CooperationSidebar />
-      </section>
-      {selectedImage !== null && <div className="iadi-lightbox" role="dialog" aria-modal="true" aria-label="ຮູບພາບ" onClick={() => setSelectedImage(null)}><button autoFocus onClick={() => setSelectedImage(null)} aria-label="ປິດ">×</button><img src={`/assets/dpo/iadi-${selectedImage}.jpeg`} alt={bilateralArticles[0].title} /></div>}
-    </>
-  )
+  return <><PageTitle title={result.data?.title || "ຂ່າວສານ"} /><section className="section container content-sidebar cooperation-archive iadi-page"><article><ApiState loading={result.loading} error={result.error} />{result.data && <><div className="iadi-gallery">{result.data.gallery?.map((url, index) => <button key={url} onClick={() => setSelectedImage(mediaUrl(url))} aria-label={`ເບິ່ງຮູບ ${index + 1}`}><img src={mediaUrl(url)} alt="" loading="lazy" /></button>)}</div><div className="iadi-copy">{result.data.content?.split(/\n\s*\n/).filter(Boolean).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div><div className="iadi-categories"><Link to={paths.cooperationCategory}>ການຮ່ວມມືສາກົນ</Link></div>{!!result.data.related?.length && <><h2 className="iadi-related-title">ຂ່າວທີ່ກ່ຽວຂ້ອງ...</h2><div className="iadi-related">{result.data.related.map(item => <Link key={item.id} to={`/${item.slug}/`}>{item.coverImageUrl && <img src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" />}<strong>{item.title}</strong></Link>)}</div></>}</>}</article><aside className="cooperation-sidebar"><div className="cooperation-widget"><SearchBox /></div><div className="cooperation-widget"><h3>ຂ່າວສານ ອື່ນໆ</h3>{recent.data?.data.map(item => <Link className="cooperation-recent" key={item.id} to={`/${item.slug}/`}>{item.coverImageUrl && <img src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" />}<strong>{item.title}</strong>{item.publishedAt && <time>{date(item.publishedAt)}</time>}</Link>)}<ApiState loading={recent.loading} error={recent.error} /></div>{!!partners.data?.data.length && <div className="cooperation-widget cooperation-partners"><h3>ໜ້າເຊື່ອມຕໍ່ເວັບຕ່າງໆ</h3>{partners.data.data.filter(item => item.logoUrl).map(item => <a key={item.id} href={item.url} target="_blank" rel="noreferrer"><img src={mediaUrl(item.logoUrl)} alt={item.name} loading="lazy" /></a>)}</div>}</aside></section>{selectedImage && <div className="iadi-lightbox" role="dialog" aria-modal="true" aria-label="ຮູບພາບ" onClick={() => setSelectedImage(null)}><button autoFocus onClick={() => setSelectedImage(null)} aria-label="ປິດ">×</button><img src={selectedImage} alt={result.data?.title || ""} /></div>}</>
 }
-
-function NewsSidebar() {
-  return (
-    <aside className="news-sidebar">
-      <SearchBox />
-      <h3>ຂ່າວຫຼ້າສຸດ</h3>
-      {newsItems.slice(0, 4).map((title, index) => (
-        <Link
-          className="recent-item"
-          to={index === 0 ? "/dporaw/" : paths.news}
-          key={title}
-        >
-          <AssetPlaceholder
-            id={`sidebar.news-${index + 1}`}
-            label="Sidebar thumbnail"
-            width={80}
-            height={80}
-            mobileWidth={64}
-            mobileHeight={64}
-          />
-          <span>{title}</span>
-        </Link>
-      ))}
-      <AssetPlaceholder
-        id="sidebar.partner-1"
-        label="Partner logo"
-        width={240}
-        height={100}
-      />
-      <AssetPlaceholder
-        id="sidebar.partner-2"
-        label="Partner logo"
-        width={240}
-        height={100}
-      />
-    </aside>
-  )
+function ContentPage({ slug, title }: { slug: string; title: string }) {
+  const result = useApi<Page>(`/pages/${encodeURIComponent(slug)}`)
+  return <><PageTitle title={result.data?.title || title} /><section className="section container api-article"><ApiState loading={result.loading} error={result.error} />{result.data && <><h1>{result.data.title}</h1>{result.data.imageUrl && <img className="api-article-image" src={mediaUrl(result.data.imageUrl)} alt="" />}<div className="api-prose">{result.data.content}</div></>}</section></>
 }
-
-function NewsArchive({ page = 1 }: { page?: number }) {
-  return (
-    <>
-      <PageTitle title="ຂ່າວສານ" />
-      <section className="section container content-sidebar cooperation-archive news-archive-page">
-        <div>
-          {page === 1 ? (
-            <div className="archive-list">
-              {newsData.slice(0, 5).map((news, index) => (
-                <article key={news.slug}>
-                  <Link to={`/${news.slug}/`} className="news-archive-image">
-                    <img src={`/assets/dpo/news-archive-${index + 1}.jpg`} alt={news.title} />
-                  </Link>
-                  <div>
-                    <h2><Link to={`/${news.slug}/`}>{news.title}</Link></h2>
-                    <time>{news.date}</time>
-                    <p>{newsExcerpts[index]}</p>
-                    <Link className="button primary" to={`/${news.slug}/`}>
-                      ອ່ານເພີ່ມເຕີມ
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <PendingState title={`Archive content pending — page ${page}`} />
-          )}
-          <nav className="pagination" aria-label="ໜ້າຂ່າວ">
-            {[1, 2].map((number) => (
-              <Link
-                className={page === number ? "active" : ""}
-                to={number === 1 ? paths.news : `${paths.news}page/${number}/`}
-                key={number}
-              >
-                {number}
-              </Link>
-            ))}
-            <span>…</span>
-            <Link
-              className={page === 29 ? "active" : ""}
-              to={`${paths.news}page/29/`}
-            >
-              29
-            </Link>
-            <Link to={`${paths.news}page/${Math.min(page + 1, 29)}/`} aria-label="ໜ້າຖັດໄປ">»</Link>
-          </nav>
-        </div>
-        <CooperationSidebar />
-      </section>
-    </>
-  )
-}
-
-function NewsArticle({ slug }: { slug: string }) {
-  const main = slug === "dporaw"
-  return (
-    <>
-      <PageTitle title={main ? newsItems[0] : "ຂ່າວສານ"} />
-      <section className="section container content-sidebar">
-        <article className="detail-article">
-          <p className="article-meta">05 / 11 / 2026 · ອົງການປົກປ້ອງເງິນຝາກ</p>
-          <AssetPlaceholder
-            id={`article.${slug}.photo-1`}
-            label="Article photo"
-            width={770}
-            height={513}
-            mobileWidth={358}
-            mobileHeight={239}
-          />
-          <p>
-            {main
-              ? "ໂຄງສ້າງບົດຄວາມລາຍລະອຽດຕາມໜ້າຂ່າວຕົ້ນສະບັບ. ຂໍ້ຄວາມສະບັບເຕັມຈະຖືກນຳເຂົ້າຫຼັງຈາກຢືນຢັນເນື້ອຫາທາງການ."
-              : "Article content pending. This discovered route has a complete detail-page structure, but no verified article dataset was supplied."}
-          </p>
-          <AssetPlaceholder
-            id={`article.${slug}.photo-2`}
-            label="Article supporting photo"
-            width={770}
-            height={513}
-            mobileWidth={358}
-            mobileHeight={239}
-          />
-          <div className="article-end">
-            <span>ແບ່ງປັນ:</span>
-            <button>Facebook</button>
-            <button>ສຳເນົາລິ້ງ</button>
-          </div>
-        </article>
-        <NewsSidebar />
-      </section>
-    </>
-  )
-}
-
-function PhoneLink({ className, label }: { className: string; label: string }) {
+function PhoneLink({ phone, className = "phone-cta-link" }: { phone: string; className?: string }) {
   const ref = useRef<HTMLAnchorElement>(null)
   useGSAP(() => {
     const link = ref.current
     if (!link) return
-    const overlay = link.querySelector(".phone-hover")
-    const text = link.querySelector(".phone-label")
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)")
     const animation = gsap.timeline({ paused: true })
-      .to(overlay, { opacity: 1, duration: 0.4, ease: "power2.inOut" })
-      .to(text, { letterSpacing: "0.08em", duration: 0.4, ease: "power2.out" }, 0)
+      .to(link.querySelector(".phone-hover"), { opacity: 1, duration: 0.4, ease: "power2.inOut" })
+      .to(link.querySelector(".phone-label"), { letterSpacing: "0.08em", duration: 0.4, ease: "power2.out" }, 0)
     const update = () => {
       const active = link.matches(":hover") || link.matches(":focus-visible")
       if (motion.matches) animation.progress(active ? 1 : 0).pause()
@@ -1634,312 +658,238 @@ function PhoneLink({ className, label }: { className: string; label: string }) {
       link.removeEventListener("blur", update)
     }
   }, { scope: ref })
-  return <a ref={ref} className={`${className} animated-phone`} href="tel:+85621330005"><span className="phone-hover" aria-hidden="true" /><span className="phone-content"><FontAwesomeIcon icon={faPhoneVolume} aria-hidden="true" /><span className="phone-label">{label} +85621330005</span></span></a>
+  return <a ref={ref} className={`${className} animated-phone`} href={`tel:${phone}`}><span className="phone-hover" aria-hidden="true" /><span className="phone-content"><span className="phone-icon"><FontAwesomeIcon icon={faPhoneVolume} aria-hidden="true" /></span><span className="phone-label">ເບີໂທ: {phone}</span></span></a>
 }
-
-function Contact() {
-  const [status, setStatus] = useState("")
-  return (
-    <div className="contact-page">
-      <PageTitle title="ຕິດຕໍ່" />
-      <section className="section container">
-        <div className="contact-cards">
-          <div className="contact-item"><FontAwesomeIcon icon={faEnvelope} aria-hidden="true" /><div><b>ອີເມວ</b><a href="mailto:info@dpo.gov.la">info@dpo.gov.la</a></div></div>
-          <div className="contact-item"><FontAwesomeIcon icon={faPhoneVolume} aria-hidden="true" /><div><b>ເບີໂທ</b><a href="tel:+85621330005">+85621-330005</a></div></div>
-          <div className="contact-item"><FontAwesomeIcon icon={faLocationDot} aria-hidden="true" /><div><b>ທີ່ຢູ່</b><a className="contact-address" href="https://maps.google.com/?q=Deposit+Protection+Office+Lao+PDR" target="_blank" rel="noreferrer">ຊັ້ນ 4 ຕຶກສຳນັກງານ ຄະນະກຳມະການຄຸ້ມຄອງຫຼັກຊັບ, ຖະໜົນໄກສອນພົມວິຫານ, ບ້ານໂພນສະອາດ, ເມືອງໄຊເສດຖາ, ນະຄອນຫຼວງວຽງຈັນ, ສປປ ລາວ.</a></div></div>
-        </div>
-        <div className="contact-grid">
-          <div>
-            <h2>ກາລຸ​ນາ​ໃຫ້​ຄຳຄິດເຫັນ​ໃນ​ຟອມລຸ່ມ​ນີ້</h2>
-            <form className="inquiry-form" onSubmit={(event) => { event.preventDefault(); setStatus("ຟອມນີ້ຍັງບໍ່ສາມາດສົ່ງຂໍ້ຄວາມໄດ້. ກະລຸນາຕິດຕໍ່ຜ່ານອີເມວ info@dpo.gov.la") }}>
-              <label>ຊື່ (*)<input name="name" required /></label>
-              <label>ອີເມວ (*)<input name="email" type="email" required /></label>
-              <label>ເລື່ອງ<input name="subject" /></label>
-              <label>ຄຳຖາມ/ຄວາມຄິດເຫັນ<textarea name="message" rows={5} /></label>
-              <button className="button primary" type="submit">ສົ່ງ</button>
-              {status && <p className="contact-status" role="status">{status}</p>}
-            </form>
-          </div>
-          <iframe className="contact-map" src={homeAssets["contact.map"]?.src} title="Deposit Protection Office map" loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen />
-        </div>
-        <div className="qr-wrap"><h2>QR CODE MAPS</h2><a href="https://maps.google.com/?q=Deposit+Protection+Office+Lao+PDR" target="_blank" rel="noreferrer"><img src="/assets/dpo/contact-qr.png" width="202" height="202" alt="QR code ແຜນທີ່ສຳນັກງານປົກປ້ອງເງິນຝາກ" /></a></div>
-        <PhoneLink className="contact-phone" label="ໂທ:" />
-      </section>
-    </div>
-  )
+function MissionPage() {
+  const page = useApi<Page>("/pages/mission")
+  const settings = useApi<Settings>("/site-settings")
+  const paragraphs = page.data?.content.split(/\n\s*\n/).map(part => part.trim()).filter(Boolean) ?? []
+  return <><PageTitle title={page.data?.title || "ພາລະບົດບາດ ແລະ ໜ້າທີ່"} /><section className="container institutional-source-page mission-page"><ApiState loading={page.loading} error={page.error} />{page.data && <><h1 className="institutional-heading">{page.data.title}</h1>{page.data.imageUrl && <img className="mission-image" src={mediaUrl(page.data.imageUrl)} alt="" />}<div className="duties-copy">{paragraphs[0] && <p>{paragraphs[0]}</p>}{paragraphs.length > 1 && <ul>{paragraphs.slice(1).map((paragraph, index) => <li key={index}>{paragraph}</li>)}</ul>}</div>{settings.data?.phone && <PhoneLink phone={settings.data.phone} />}</>}</section></>
 }
-
-function FAQItem({ item, index }: { item: (typeof faqData)[number]; index: number }) {
+function HistoryPage() {
+  const page = useApi<Page>("/pages/history")
+  const home = useApi<Home>("/home")
+  const settings = useApi<Settings>("/site-settings")
+  const paragraphs = page.data?.content.split(/\n\s*\n/).map(part => part.trim()).filter(Boolean) ?? []
+  return <><PageTitle title={page.data?.title || "ປະຫວັດຄວາມເປັນມາ"} /><section className="container institutional-source-page history-page"><ApiState loading={page.loading} error={page.error} />{page.data && <><h1 className="institutional-heading">{paragraphs[0] || page.data.title}</h1><div className="history-copy">{paragraphs.slice(1).map((paragraph, index) => <div key={index}><p>{paragraph}</p>{index === 2 && page.data?.imageUrl && <img className="history-image" src={mediaUrl(page.data.imageUrl)} alt="" loading="lazy" />}{index === 4 && home.data?.intro.imageUrl && <img className="history-image" src={mediaUrl(home.data.intro.imageUrl)} alt="" loading="lazy" />}</div>)}</div>{settings.data?.phone && <PhoneLink phone={settings.data.phone} />}</>}</section></>
+}
+function InquiryForm({ source }: { source: "contact" | "faq" }) {
+  const [status, setStatus] = useState(""); const [pending, setPending] = useState(false)
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); const form = event.currentTarget; const fields = new FormData(form)
+    setPending(true); setStatus("")
+    try { await request("/inquiries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: String(fields.get("name") || ""), email: String(fields.get("email") || ""), subject: String(fields.get("subject") || ""), message: String(fields.get("message") || ""), source }) }); form.reset(); setStatus("ສົ່ງຂໍ້ຄວາມສຳເລັດແລ້ວ") }
+    catch (error) { setStatus(error instanceof Error ? error.message : "ສົ່ງຂໍ້ຄວາມບໍ່ສຳເລັດ") } finally { setPending(false) }
+  }
+  return <form className={source === "faq" ? "faq-inquiry" : "inquiry-form"} onSubmit={submit}><label>ຊື່ *<input name="name" required maxLength={120} /></label><label>ອີເມວ *<input name="email" type="email" required maxLength={254} /></label><label>ຫົວຂໍ້<input name="subject" maxLength={200} /></label><label>ຂໍ້ຄວາມ *<textarea name="message" rows={6} required maxLength={5000} /></label><button className="button primary" type="submit" disabled={pending}>{pending ? "ກຳລັງສົ່ງ..." : "ສົ່ງ"}</button>{status && <p role="status">{status}</p>}</form>
+}
+function ContactPage() {
+  const settings = useApi<Settings>("/site-settings"); const data = settings.data
+  return <div className="contact-page"><PageTitle title="ຕິດຕໍ່" /><section className="section container"><ApiState loading={settings.loading} error={settings.error} />{data && <div className="contact-cards"><div className="contact-item"><FontAwesomeIcon icon={faEnvelope} aria-hidden="true" /><div><b>ອີເມວ</b><a href={`mailto:${data.email}`}>{data.email}</a></div></div><div className="contact-item"><FontAwesomeIcon icon={faPhoneVolume} aria-hidden="true" /><div><b>ເບີໂທ</b><a href={`tel:${data.phone}`}>{data.phone}</a></div></div><div className="contact-item"><FontAwesomeIcon icon={faLocationDot} aria-hidden="true" /><div><b>ທີ່ຢູ່</b><span className="contact-address">{data.address}</span></div></div></div>}<div className="contact-grid"><div><h2>ກາລຸນາໃຫ້ຄຳຄິດເຫັນໃນຟອມລຸ່ມນີ້</h2><InquiryForm source="contact" /></div>{data?.mapEmbedUrl && <iframe className="contact-map" src={data.mapEmbedUrl} title="ແຜນທີ່" loading="lazy" />}</div><div className="qr-wrap"><h2>QR CODE MAPS</h2><img src="/assets/dpo/contact-qr.png" width="202" height="202" alt="QR code ແຜນທີ່ສຳນັກງານປົກປ້ອງເງິນຝາກ" /></div>{data?.phone && <PhoneLink phone={data.phone} className="contact-phone" />}</section></div>
+}
+function FaqItem({ item }: { item: Faq }) {
   const [open, setOpen] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
+  const panelId = useId()
   useGSAP(() => {
     if (!panelRef.current) return
-    gsap.to(panelRef.current, {
-      height: open ? "auto" : 0,
-      duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 0.4,
-      ease: "power2.inOut",
-      overwrite: "auto",
-    })
-  }, { dependencies: [open] })
-  const memberLink = "ລາຍຊື່ສະມາຊິກ ສປງ ສະບັບປັບປຸງ ລ່າສຸດ"
-  return <div className={`faq-item${open ? " is-open" : ""}`}>
-    <button type="button" aria-expanded={open} aria-controls={`faq-answer-${index}`} onClick={() => setOpen(!open)}>
-      {item.question}<FontAwesomeIcon icon={faChevronDown} aria-hidden="true" />
-    </button>
-    <div ref={panelRef} id={`faq-answer-${index}`} className="faq-panel" aria-hidden={!open} inert={!open}>
-      <div className="faq-answer">{item.answer.map((part, partIndex) => {
-        const [before, after] = part.text.split(memberLink)
-        const content = after === undefined ? part.text : <>{before}<a href="https://bit.ly/3ub2Nve" target="_blank" rel="noreferrer">{memberLink}</a>{after}</>
-        return part.type === "li" ? <div className="faq-list-answer" key={partIndex}>• {content}</div> : <p key={partIndex}>{content}</p>
-      })}</div>
-    </div>
+    gsap.to(panelRef.current, { height: open ? "auto" : 0, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 0.4, ease: "power2.inOut", overwrite: "auto" })
+  }, { dependencies: [open], scope: panelRef })
+  return <div className={`faq-item${open ? " is-open" : ""}`}><button type="button" aria-expanded={open} aria-controls={panelId} onClick={() => setOpen(!open)}>{item.question}<FontAwesomeIcon icon={faChevronDown} aria-hidden="true" /></button><div ref={panelRef} id={panelId} className="faq-panel" aria-hidden={!open} inert={!open}><p className="faq-answer api-prose">{item.answer}</p></div></div>
+}
+function FaqPage() {
+  const result = useApi<List<Faq>>("/faqs?limit=100")
+  const settings = useApi<Settings>("/site-settings")
+  return <div className="faq-page"><PageTitle title="ຄຳຖາມທີ່ພົບເລື້ອຍ" /><section className="section container"><h1 className="faq-hero-title">ຫາກທ່ານມີ ຄຳຖາມ ?</h1>{settings.data?.phone && <PhoneLink phone={settings.data.phone} className="faq-phone" />}<div className="faq-layout"><div><h2 className="faq-heading"><FontAwesomeIcon icon={faCircleQuestion} aria-hidden="true" /> ຄໍາຖາມທີ່ພົບເລື້ອຍ</h2><div className="faq-list">{result.data?.data.map(item => <FaqItem key={item.id} item={item} />)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /></div><div><h2 className="faq-heading"><FontAwesomeIcon icon={faPenToSquare} aria-hidden="true" /> ສອບຖາມພວກເຮົາ</h2><InquiryForm source="faq" /></div></div></section></div>
+}
+function PartnersPage() {
+  const [page, setPage] = useState(1); const result = useApi<List<Partner>>(`/partners?page=${page}&limit=20`)
+  return <><PageTitle title="ເຊື່ອມຕໍ່" /><section className="section container connections-page"><h1>ໜ້າເຊື່ອມຕໍ່ເວັບໄຊພາກສ່ວນລັດຖະບານ ແລະ ສາກົນ</h1><div className="connections-grid">{result.data?.data.map(partner => <a className="connection-card" key={partner.id} href={partner.url} target="_blank" rel="noreferrer">{partner.logoUrl && <img src={mediaUrl(partner.logoUrl)} alt="" loading="lazy" />}<div className="connection-copy"><hr /><h3>{partner.name}</h3>{partner.address && <p>{partner.address}</p>}{partner.phone && <p>{partner.phone}</p>}{partner.email && <p>{partner.email}</p>}</div></a>)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></section></>
+}
+function SearchResults() {
+  const { locale } = useLocale()
+  const en = locale === "en"
+  const query = new URLSearchParams(window.location.search).get("q")?.trim() || ""
+  const [draft, setDraft] = useState(query)
+  const [filter, setFilter] = useState("all")
+  const [page, setPage] = useState(1)
+  const result = useApi<{ news: News[]; documents: Document[]; pages: Page[] }>(query ? `/search?q=${encodeURIComponent(query)}&limit=100` : null)
+  const items = [
+    ...(result.data?.news ?? []).map(item => ({ key: `news:${item.id}`, type: "news", title: item.title, url: `/${item.slug}/`, image: item.coverImageUrl, publishedAt: item.publishedAt })),
+    ...(result.data?.documents ?? []).map(item => ({ key: `document:${item.id}`, type: "documents", title: item.title, url: item.fileUrl ? mediaUrl(item.fileUrl) : null, image: null, publishedAt: item.documentDate })),
+    ...(result.data?.pages ?? []).map(item => ({ key: `page:${item.slug}`, type: "pages", title: item.title, url: `/pages/${item.slug}/`, image: null, publishedAt: null })),
+  ]
+  const labels: Record<string, string> = { all: en ? "All results" : "ທັງໝົດ", news: en ? "News" : "ຂ່າວສານ", documents: en ? "Documents" : "ເອກະສານ", pages: en ? "Pages" : "ໜ້າເວັບ" }
+  const filtered = filter === "all" ? items : items.filter(item => item.type === filter)
+  const totalPages = Math.max(1, Math.ceil(filtered.length / 8))
+  const visible = filtered.slice((page - 1) * 8, page * 8)
+  const search = (value: string) => { if (value.trim()) navigate(`/search/?q=${encodeURIComponent(value.trim())}`) }
+  const suggestions = ["ປົກປ້ອງເງິນຝາກ", "ສະມາຊິກ", "ຄະນະ"]
+  return <div className="search-page">
+    <PageTitle title={en ? "Search results" : "ຜົນການຄົ້ນຫາ"} />
+    <section className="container search-workspace" aria-labelledby="search-title">
+      <div className="search-intro"><header className="search-heading"><span className="search-eyebrow">DPO / {en ? "Website search" : "ຄົ້ນຫາຂໍ້ມູນ"}</span><h1 id="search-title">{en ? "Find information from DPO" : "ຄົ້ນຫາຂໍ້ມູນຈາກ ສປງ"}</h1><p>{en ? "News, published documents and information about our office." : "ຂ່າວສານ, ເອກະສານ ແລະ ຂໍ້ມູນກ່ຽວກັບສຳນັກງານ."}</p></header>
+      <form className="search-query-form" role="search" onSubmit={event => { event.preventDefault(); search(draft) }}>
+        <label htmlFor="search-query">{en ? "Search the website" : "ຄຳຄົ້ນຫາ"}</label>
+        <div><FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" /><input id="search-query" type="search" maxLength={200} value={draft} onChange={event => setDraft(event.target.value)} placeholder={en ? "What are you looking for?" : "ທ່ານຕ້ອງການຄົ້ນຫາຫຍັງ?"} /><button type="submit" disabled={!draft.trim()}>{en ? "Search" : "ຄົ້ນຫາ"}<FontAwesomeIcon icon={faArrowRight} aria-hidden="true" /></button></div>
+      </form></div>
+      <div className="search-layout">
+        <div className="search-main">
+          <div className="search-result-heading"><h2>{query ? <>{en ? "Results for" : "ຜົນຄົ້ນຫາສຳລັບ"} <span>“{query}”</span></> : en ? "Start your search" : "ເລີ່ມຄົ້ນຫາຂໍ້ມູນ"}</h2><span role="status">{query && result.data && !result.loading && `${items.length}${[result.data.news, result.data.documents, result.data.pages].some(group => group.length === 100) ? "+" : ""} ${en ? "results" : "ຜົນລັບ"}`}</span></div>
+          {query && <div className="search-filters" role="group" aria-label={en ? "Filter results" : "ປະເພດຜົນຄົ້ນຫາ"}>{Object.entries(labels).map(([key, label]) => <button type="button" key={key} aria-pressed={filter === key} onClick={() => { setFilter(key); setPage(1) }}>{label}<span>{key === "all" ? items.length : items.filter(item => item.type === key).length}</span></button>)}</div>}
+          {result.loading ? <div className="search-feedback" role="status"><FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" /><h3>{en ? "Searching the website…" : "ກຳລັງຄົ້ນຫາຂໍ້ມູນ..."}</h3></div> : result.error ? <div className="search-feedback" role="alert"><h3>{en ? "We could not load the results" : "ບໍ່ສາມາດໂຫຼດຜົນຄົ້ນຫາໄດ້"}</h3><p>{result.error}</p><button type="button" onClick={() => window.location.reload()}>{en ? "Try again" : "ລອງໃໝ່"}</button></div> : !query || filtered.length === 0 ? <div className="search-feedback"><FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" /><h3>{!query ? en ? "What would you like to know?" : "ທ່ານຕ້ອງການຮູ້ກ່ຽວກັບຫຍັງ?" : en ? "No matching results" : "ບໍ່ພົບຂໍ້ມູນທີ່ກົງກັນ"}</h3><p>{en ? "Try a shorter keyword, check your spelling, or choose a topic below." : "ລອງໃຊ້ຄຳທີ່ສັ້ນລົງ, ກວດກາການສະກົດ ຫຼື ເລືອກຫົວຂໍ້ດ້ານລຸ່ມ."}</p>{filter !== "all" && items.length > 0 && <button type="button" onClick={() => setFilter("all")}>{en ? "View all results" : "ເບິ່ງຜົນລັບທັງໝົດ"}</button>}<div className="search-topic-links">{suggestions.map(topic => <button type="button" key={topic} onClick={() => search(topic)}>{topic}<span aria-hidden="true">↗</span></button>)}</div></div> : <>
+            <div className="search-result-list" aria-label={labels[filter]}>{visible.map(item => <article className="search-result-row" key={item.key}>
+              <div className="search-result-image">{item.image ? <Link to={item.url!}><img src={mediaUrl(item.image)} alt={item.title} loading="lazy" /></Link> : <FontAwesomeIcon icon={item.type === "documents" ? faCloudArrowDown : faPenToSquare} aria-hidden="true" />}</div>
+              <div className="search-result-copy"><span className="search-result-type">{labels[item.type]}</span><h3>{!item.url ? item.title : item.type === "documents" ? <a href={item.url} target="_blank" rel="noreferrer">{item.title}<span className="sr-only"> ({en ? "opens in a new tab" : "ເປີດໃນແຖບໃໝ່"})</span></a> : <Link to={item.url}>{item.title}</Link>}</h3>{item.publishedAt && <time dateTime={item.publishedAt}>{date(item.publishedAt)}</time>}{!item.url && <span className="search-file-missing">{en ? "File currently unavailable" : "ໄຟລ໌ຍັງບໍ່ພ້ອມໃຫ້ດາວໂຫຼດ"}</span>}</div>
+            </article>)}</div><Pagination page={page} totalPages={totalPages} setPage={next => { setPage(next); document.querySelector(".search-result-heading")?.scrollIntoView({ block: "start", behavior: "instant" }) }} />
+          </>}
+        </div>
+        <div className="search-results-sidebar"><NewsArchiveSidebar showSearch={false} /></div>
+      </div>
+    </section>
   </div>
 }
-
-function FAQ() {
-  const [status, setStatus] = useState("")
-  return (
-    <div className="faq-page">
-      <PageTitle title="ຄຳຖາມທີ່ພົບເລື້ອຍ" />
-      <section className="section container">
-        <h2 className="faq-hero-title">ຫາກທ່ານມີ ຄຳຖາມ ?</h2>
-        <PhoneLink className="faq-phone" label="ເບີໂທ:" />
-        <div className="faq-layout">
-          <div>
-            <h2 className="faq-heading"><FontAwesomeIcon icon={faCircleQuestion} aria-hidden="true" />ຄໍາຖາມທີ່ພົບເລື້ອຍ</h2>
-            <div className="faq-list">{faqData.map((item, index) => <FAQItem key={item.question} item={item} index={index} />)}</div>
-          </div>
-          <div>
-            <h2 className="faq-heading"><FontAwesomeIcon icon={faPenToSquare} aria-hidden="true" />ສອບຖາມພວກເຮົາ</h2>
-            <form className="faq-inquiry" onSubmit={(event) => { event.preventDefault(); setStatus("ຟອມນີ້ຍັງບໍ່ສາມາດສົ່ງຂໍ້ຄວາມໄດ້. ກະລຸນາຕິດຕໍ່ info@dpo.gov.la") }}>
-              <input name="name" aria-label="ຊື່" placeholder="ຊື່ (***)" required />
-              <input name="email" type="email" aria-label="ອີເມວ" placeholder="ອີເມວ (***)" required />
-              <input name="subject" aria-label="ຫົວຂໍ້" placeholder="ຫົວຂໍ້" />
-              <textarea name="message" aria-label="ຄວາມຄິດເຫັນ" placeholder="ຄວາມຄິດເຫັນ" rows={10} />
-              <button type="submit">ສົ່ງ</button>
-              {status && <p role="status">{status}</p>}
-            </form>
-          </div>
-        </div>
-      </section>
-    </div>
-  )
-}
-
-function Connections() {
-  return <>
-    <PageTitle title="ເຊື່ອມຕໍ່" />
-    <section className="section container connections-page">
-      <h2>ໜ້າເຊຶ່ອມຕໍ່ເວັບໄຊພາກສ່ວນລັດຖະບານ ແລະ ສາກົນ</h2>
-      <div className="connections-grid">{partners.map((partner) => {
-        const image = homeAssets[`connections.partner-${partner.id}.logo`]
-        return <a className="connection-card" key={partner.id} href={partner.url} target="_blank" rel="noopener noreferrer">
-          <img src={image?.src} alt={partner.text[0]} loading="lazy" />
-          <div className="connection-copy"><hr /><h3>{partner.text[0]}</h3>{partner.text.slice(1).map((line, index) => {
-            const colon = line.indexOf(":")
-            return <p key={index}>{colon >= 0 ? <><strong>{line.slice(0, colon + 1)}</strong> {line.slice(colon + 1)}</> : line}</p>
-          })}</div>
-        </a>
-      })}</div>
-    </section>
-  </>
-}
-
-function PendingState({ title, text }: {
-  title: string
-  text?: string
-}) {
-  return (
-    <div className="pending-state">
-      <span>CONTENT STATUS</span>
-      <h2>{title}</h2>
-      <p>{text ?? "ໂຄງສ້າງໜ້ານີ້ສຳເລັດແລ້ວ. ເນື້ອຫາທາງການຍັງລໍຖ້າການຢືນຢັນ."}</p>
-    </div>
-  )
-}
-
-function SearchResults() {
-  const query = new URLSearchParams(window.location.search).get("q") ?? ""
-  return (
-    <>
-      <PageTitle title="ຜົນການຄົ້ນຫາ" />
-      <section className="section container narrow">
-        <SearchBox />
-        <PendingState
-          title={query ? `ບໍ່ພົບຜົນສຳລັບ “${query}”` : "ປ້ອນຄຳຄົ້ນຫາ"}
-          text="Search structure is active. No complete searchable content index is available at this stage."
-        />
-      </section>
-    </>
-  )
-}
-
-function NotFound({ legacy = false }: { legacy?: boolean }) {
-  return (
-    <>
-      <PageTitle title="ບໍ່ພົບໜ້າ" />
-      <section className="not-found container">
-        <strong>404</strong>
-        <h2>{legacy ? "Legacy page is unavailable" : "Page not found"}</h2>
-        <p>
-          {legacy
-            ? "The observed ?page_id=1341 address returned 404. Use the canonical organization chart route below."
-            : "The requested route is not part of the discovered public site structure."}
-        </p>
-        <SearchBox />
-        <Link
-          className="button primary"
-          to={legacy ? "/dpo-organization-chart/" : "/"}
-        >
-          {legacy ? "Open canonical organization chart" : "ກັບໜ້າຫຼັກ"}
-        </Link>
-      </section>
-    </>
-  )
-}
-
-function resolvePage(path: string) {
-  if (window.location.search.includes("page_id=1341"))
-    return <NotFound legacy />
-  if (path === "/") return <Home />
-  if (path === paths.duties) return <InstitutionalPage type="duties" />
-  if (path === paths.history) return <InstitutionalPage type="history" />
-  if (path === paths.about) return <InstitutionalPage type="about" />
-  if (path === "/dpo_bod/") return <OrganizationPage type="board" />
-  if (path === paths.party) return <OrganizationPage type="party" />
-  if (path === "/dpo-organization-chart/")
-    return <OrganizationPage type="state" />
-  const legal = (["decrees", "decisions", "notices", "forms", "guidance"] as const).find((type) => paths[type] === path)
-  if (legal) return <DecreesPage key={legal} type={legal} />
-  if (path === "/fsnp/") return <DecreesPage key="fsnp" type="fsnp" />
-  if (path === paths.information) return <DecreesPage key="information" type="information" />
-  const libraries: [string, keyof typeof libraryCounts][] = []
-  const library = libraries.find(([route]) => path === route)
-  if (library) return <DocumentLibrary type={library[1]} />
-  if (path === paths.bilateral) return <Bilateral />
-  if (path === "/iadi-earc-aprc/") return <IadiArticle />
-  if (path === paths.cooperationCategory) return <CooperationArchive />
-  if (path === paths.international)
-    return (
-      <>
-        <PageTitle title="ການເຄື່ອນໄຫວວຽກງານຮ່ວມມືສາກົນ" />
-        <section className="section container">
-        </section>
-      </>
-    )
-  if (path === paths.news) return <NewsArchive />
-  const archiveMatch = path.match(/\/ຂ່າວສານ\/page\/(\d+)\/?$/)
-  if (archiveMatch) return <NewsArchive page={Number(archiveMatch[1])} />
-  if (path === paths.contact) return <Contact />
-  if (path === paths.faq) return <FAQ />
-  if (path === paths.connections) return <Connections />
-  if (path === "/en/")
-    return (
-      <>
-        <PageTitle title="English" />
-        <section className="section container">
-          <PendingState
-            title="503 — English version unavailable"
-            text="The source English route was observed returning Service Unavailable. Translation coverage cannot be inferred."
-          />
-        </section>
-      </>
-    )
-  const articleSlugs = [
-    "dporaw",
-    "dpoxdiv",
-    "anv27year",
-    "kdicglobaltrainingprogram",
-    "laogoldfestival2026",
-    "dponewlaw",
-  ]
-  const slug = articleSlugs.find((item) => path === `/${item}/`)
-  if (slug) return <NewsArticle slug={slug} />
+function AppPage({ path }: { path: string }) {
+  if (path === "/") return <HomePage />
+  const document = documentCategories[path]; if (document) return <DocumentsPage key={document.category} {...document} />
+  if (path === paths.news) return <NewsListPage />
+  const newsArchive = path.match(/^\/ຂ່າວສານ\/page\/(\d+)\/$/); if (newsArchive) return <NewsListPage initialPage={Number(newsArchive[1])} />
+  if (path === paths.bilateral) return <BilateralPage />
+  if (path === paths.international) return <><PageTitle title="ການເຄື່ອນໄຫວວຽກງານຮ່ວມມືສາກົນ" /><div className="section container content-sidebar"><section /><aside /></div></>
+  if (path === paths.cooperationCategory) return <NewsListPage international />
+  if (path === paths.contact) return <ContactPage />
+  if (path === paths.faq) return <FaqPage />
+  if (path === paths.connections) return <PartnersPage />
   if (path === "/search/") return <SearchResults />
-  return <NotFound />
+  if (path === paths.duties) return <MissionPage />
+  if (path === paths.history) return <HistoryPage />
+  const knownPages: Record<string, string> = { [paths.party]: "organization-party", "/dpo_bod/": "organization-board", "/dpo-organization-chart/": "structure" }
+  if (knownPages[path]) return <ContentPage slug={knownPages[path]} title="ກ່ຽວກັບ ສປງ" />
+  const page = path.match(/^\/pages\/([^/]+)\/$/); if (page) return <ContentPage slug={page[1]} title="ຂໍ້ມູນ" />
+  const article = path.match(/^\/(?:news\/)?([^/]+)\/$/); if (article) return article[1] === "iadi-earc-aprc" ? <IadiArticle /> : <ArticlePage slug={article[1]} />
+  return <><PageTitle title="ບໍ່ພົບໜ້າ" /><section className="section container">ບໍ່ພົບໜ້າທີ່ທ່ານຄົ້ນຫາ</section></>
 }
-
 function SocialRail() {
   const rail = useRef<HTMLDivElement>(null)
   const [collapsed, setCollapsed] = useState(false)
   const { contextSafe } = useGSAP({ scope: rail })
   const expand = contextSafe((link: HTMLAnchorElement, open: boolean) => {
-    gsap.to(link.querySelector(".social-label"), {
-      xPercent: open ? -100 : 0,
-      autoAlpha: open ? 1 : 0,
-      duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? 0
-        : 0.25,
-      ease: "power2.out",
-      overwrite: "auto",
-    })
+    gsap.to(link.querySelector(".social-label"), { xPercent: open ? -100 : 0, autoAlpha: open ? 1 : 0, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 0.25, ease: "power2.out", overwrite: "auto" })
   })
-  return (
-    <div
-      ref={rail}
-      className={`social-rail ${collapsed ? "collapsed" : ""}`}
-      aria-label="Social links"
-    >
-      <button
-        aria-label={collapsed ? "Expand social links" : "Collapse social links"}
-        aria-expanded={!collapsed}
-        onClick={() => setCollapsed(!collapsed)}
-      >
-        <FontAwesomeIcon icon={faArrowRight} />
-      </button>
-      {[
-        {
-          label: "DPO LAOS",
-          href: "https://www.facebook.com/dpolaos",
-          icon: faFacebookF,
-        },
-        {
-          label: "YouTube",
-          href: "https://www.youtube.com/@dpolaos",
-          icon: faYoutube,
-        },
-      ].map((item) => (
-        <a
-          key={item.label}
-          href={item.href}
-          target="_blank"
-          rel="noreferrer"
-          aria-label={item.label}
-          onMouseEnter={(e) => expand(e.currentTarget, true)}
-          onMouseLeave={(e) => expand(e.currentTarget, false)}
-          onFocus={(e) => expand(e.currentTarget, true)}
-          onBlur={(e) => expand(e.currentTarget, false)}
-        >
-          <span className="social-label" aria-hidden="true">
-            {item.label}
-          </span>
-          <FontAwesomeIcon icon={item.icon} />
-        </a>
-      ))}
-    </div>
-  )
+  const settings = useApi<Settings>("/site-settings")
+  const links = [{ label: "DPO LAOS", href: settings.data?.facebookUrl, icon: faFacebookF, className: "social-facebook" }, { label: "YouTube", href: settings.data?.youtubeUrl, icon: faYoutube, className: "social-youtube" }].filter(link => link.href)
+  if (!links.length) return null
+  return <div ref={rail} className={`social-rail${collapsed ? " collapsed" : ""}`} aria-label="Social links"><button type="button" aria-label={collapsed ? "Expand social links" : "Collapse social links"} aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}><FontAwesomeIcon icon={faArrowRight} className="social-toggle-icon" /></button>{links.map(link => <a className={link.className} key={link.label} href={link.href} target="_blank" rel="noreferrer" aria-label={link.label} onMouseEnter={event => expand(event.currentTarget, true)} onMouseLeave={event => expand(event.currentTarget, false)} onFocus={event => expand(event.currentTarget, true)} onBlur={event => expand(event.currentTarget, false)}><span className="social-label" aria-hidden="true">{link.label}</span><FontAwesomeIcon icon={link.icon} /></a>)}</div>
 }
-
-export default function App() {
-  const [location, setLocation] = useState(() => ({
-    path: decodeURI(window.location.pathname),
-    search: window.location.search,
-  }))
-  useEffect(() => {
-    const update = () =>
-      setLocation({
-        path: decodeURI(window.location.pathname),
-        search: window.location.search,
+function DpoChat() {
+  const { locale } = useLocale()
+  const [pending, setPending] = useState(false)
+  const [chatError, setChatError] = useState("")
+  const requestRef = useRef<AbortController | null>(null)
+  useEffect(() => () => requestRef.current?.abort(), [])
+  const faq = useApi<List<Faq>>("/faqs?limit=100")
+  const [open, setOpen] = useState(false)
+  const [draft, setDraft] = useState("")
+  const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string; sources?: ChatSource[]; mode?: "ai" | "search" }[]>([])
+  const [hintIndex, setHintIndex] = useState(0)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const overlayRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const launcherRef = useRef<HTMLButtonElement>(null)
+  const messagesRef = useRef<HTMLDivElement>(null)
+  const hintRef = useRef<HTMLButtonElement>(null)
+  const questions = faq.data?.data ?? []
+  const hint = questions[hintIndex % (questions.length || 1)]
+  const close = () => { setOpen(false); launcherRef.current?.focus({ preventScroll: true }) }
+  const answer = async (question: string, selected?: Faq) => {
+    const text = question.trim()
+    if (!text || requestRef.current) return
+    setChatError("")
+    setDraft("")
+    setMessages(current => [...current, { role: "user", text }])
+    if (selected) {
+      setMessages(current => [...current, { role: "assistant", text: selected.answer, sources: [{ id: selected.id, title: selected.question, url: paths.faq, excerpt: selected.answer.slice(0, 220) }] }])
+      return
+    }
+    const controller = new AbortController()
+    requestRef.current = controller
+    setPending(true)
+    const timer = window.setTimeout(() => controller.abort(), 30000)
+    try {
+      const result = await request<ChatReply>("/chat", {
+        method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal,
+        body: JSON.stringify({ message: text, locale, history: messages.slice(-6).map(item => ({ role: item.role, text: item.text.slice(0, 2000) })) }),
       })
-    window.addEventListener("popstate", update)
-    return () => window.removeEventListener("popstate", update)
-  }, [])
-  return (
-    <>
-      <Header path={location.path} />
-      <main id="main-content">{resolvePage(location.path)}</main>
-      <Footer />
-      <SocialRail />
-    </>
-  )
+      setMessages(current => [...current, { role: "assistant", text: result.answer, sources: result.sources, mode: result.mode }])
+    } catch {
+      setDraft(text)
+      setChatError(locale === "en" ? "Could not send your question. Please retry or select a FAQ below." : "ບໍ່ສາມາດສົ່ງຄຳຖາມໄດ້. ກະລຸນາລອງໃໝ່ ຫຼື ເລືອກ FAQ ດ້ານລຸ່ມ.")
+    } finally {
+      window.clearTimeout(timer)
+      requestRef.current = null
+      setPending(false)
+    }
+  }
+  useEffect(() => {
+    if (open) {
+      inputRef.current?.focus({ preventScroll: true })
+      if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight
+    }
+  }, [open, messages])
+  useGSAP(() => {
+    const duration = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : open ? 0.35 : 0.25
+    gsap.to(overlayRef.current, { autoAlpha: open ? 1 : 0, duration, overwrite: "auto" })
+    gsap.to(panelRef.current, {
+      autoAlpha: open ? 1 : 0, y: open ? 0 : 28, scale: open ? 1 : 0.96,
+      duration,
+      ease: open ? "power3.out" : "power2.in", overwrite: "auto",
+    })
+  }, { scope: rootRef, dependencies: [open] })
+  useGSAP(() => {
+    const element = hintRef.current
+    if (open || !element || !questions.length) return
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    const timeline = gsap.timeline({ repeat: -1, repeatDelay: reduced ? 1 : 0.75 })
+      .call(() => {
+        const offset = 1 + Math.floor(Math.random() * Math.max(1, questions.length - 1))
+        setHintIndex(index => (index + offset) % questions.length)
+      })
+      .fromTo(element, { autoAlpha: 0, y: reduced ? 0 : 12, scale: reduced ? 1 : 0.97 }, { autoAlpha: 1, y: 0, scale: 1, duration: reduced ? 0 : 0.35, ease: "power3.out" }, 0)
+      .to(element, { autoAlpha: 0, y: reduced ? 0 : 8, duration: reduced ? 0 : 0.25, ease: "power2.in" }, 3)
+    const updatePlayback = () => { timeline.paused(document.hidden || element.matches(":hover, :focus")) }
+    const events = ["mouseenter", "mouseleave", "focus", "blur"]
+    events.forEach(event => element.addEventListener(event, updatePlayback))
+    document.addEventListener("visibilitychange", updatePlayback)
+    updatePlayback()
+    return () => {
+      events.forEach(event => element.removeEventListener(event, updatePlayback))
+      document.removeEventListener("visibilitychange", updatePlayback)
+    }
+  }, { scope: rootRef, dependencies: [open, questions.length], revertOnUpdate: true })
+  return <div ref={rootRef} className="dpo-chat">
+    <button ref={overlayRef} type="button" className="dpo-chat-overlay" tabIndex={-1} aria-hidden="true" disabled={!open} onClick={close} />
+    <section ref={panelRef} id="dpo-chat-panel" className="dpo-chat-panel" aria-label="ສອບຖາມ ສປງ" aria-hidden={!open} inert={!open} onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); close() } }}>
+      <header className="dpo-chat-header"><img src="/assets/dpo/chat-logo.png" alt="" /><div><strong>ສອບຖາມ ສປງ</strong><span>{locale === "en" ? "Answers from the DPO website" : "ຄຳຕອບຈາກຂໍ້ມູນເວັບ DPO"}</span></div><button type="button" onClick={close} aria-label="ປິດ"><FontAwesomeIcon icon={faXmark} /></button></header>
+      <div ref={messagesRef} className="dpo-chat-messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="ປະຫວັດການສົນທະນາ">
+        <div className="dpo-chat-message assistant"><p>ສະບາຍດີ! ຖາມກ່ຽວກັບ ສປງ, ໜ້າທີ່, ຂ່າວສານ ຫຼື ການຕິດຕໍ່ໄດ້. ຄຳຕອບຈະມີແຫຼ່ງຂໍ້ມູນໃຫ້ກວດສອບ.</p></div>
+        {messages.map((message, index) => <div key={index} className={`dpo-chat-message ${message.role}`}><p className="api-prose">{message.text}</p>{message.mode && <small className="dpo-chat-mode">{message.mode === "ai" ? "AI · DPO" : locale === "en" ? "Website search · AI unavailable" : "ຄົ້ນຫາເວັບ · AI ບໍ່ພ້ອມ"}</small>}{!!message.sources?.length && <div className="dpo-chat-sources"><strong>{locale === "en" ? "Sources" : "ແຫຼ່ງຂໍ້ມູນ"}</strong>{message.sources.map(source => <div key={source.id}><Link to={source.url} onClick={() => setOpen(false)}>{source.title} ↗</Link><details><summary>{locale === "en" ? "View source excerpt" : "ເບິ່ງຂໍ້ຄວາມອ້າງອີງ"}</summary><p>{source.excerpt}</p></details></div>)}</div>}</div>)}
+        {pending && <p role="status">{locale === "en" ? "Finding an answer…" : "ກຳລັງຄົ້ນຫາຄຳຕອບ..."}</p>}
+        {chatError && <p role="alert">{chatError}</p>}
+      </div>
+      <div className="dpo-chat-suggestions">{questions.map(item => <button type="button" key={item.id} disabled={pending} onClick={() => answer(item.question, item)}>{item.question}</button>)}</div>
+      <p className="dpo-chat-notice">{locale === "en" ? "Questions and recent messages may be sent to Google AI. Do not share personal or account details. " : "ຄຳຖາມ ແລະ ຂໍ້ຄວາມລ່າສຸດອາດຖືກສົ່ງໃຫ້ Google AI. ບໍ່ຄວນສົ່ງຂໍ້ມູນສ່ວນຕົວ ຫຼື ບັນຊີ. "}<Link to={paths.contact} onClick={() => setOpen(false)}>ຕິດຕໍ່ ສປງ →</Link></p>
+      <form className="dpo-chat-form" onSubmit={event => { event.preventDefault(); answer(draft) }}>
+        <input ref={inputRef} value={draft} onChange={event => setDraft(event.target.value)} maxLength={500} placeholder="ພິມຄຳຖາມຂອງທ່ານ..." aria-label="ຄຳຖາມຂອງທ່ານ" disabled={pending} />
+        <button type="submit" disabled={!draft.trim() || pending} aria-label="ສົ່ງຄຳຖາມ"><FontAwesomeIcon icon={faPaperPlane} /></button>
+      </form>
+    </section>
+    {!open && hint && <button ref={hintRef} type="button" className="dpo-chat-hint" onClick={() => { answer(hint.question, hint); setOpen(true) }}><span className="dpo-chat-hint-label">ຄຳຖາມແນະນຳ</span><span className="dpo-chat-hint-question">{hint.question}</span><span className="dpo-chat-hint-action">ເບິ່ງຄຳຕອບ <span aria-hidden="true">→</span></span></button>}
+    <button ref={launcherRef} className="dpo-chat-launcher" type="button" onClick={() => setOpen(current => !current)} aria-controls="dpo-chat-panel" aria-expanded={open} aria-label={open ? "ປິດການສົນທະນາ" : "ເປີດການສົນທະນາ"}><img src="/assets/dpo/chat-logo.png" alt="" /></button>
+  </div>
+}
+export default function App() {
+  const [location, setLocation] = useState(() => ({ path: decodeURI(window.location.pathname).replace(/\/?$/, "/"), search: window.location.search }))
+  useEffect(() => { const update = () => setLocation({ path: decodeURI(window.location.pathname).replace(/\/?$/, "/"), search: window.location.search }); window.addEventListener("popstate", update); return () => window.removeEventListener("popstate", update) }, [])
+  return <><Header path={location.path} /><main id="main-content"><AppPage key={`${location.path}${location.search}`} path={location.path} /></main><Footer /><SocialRail /><DpoChat /></>
 }

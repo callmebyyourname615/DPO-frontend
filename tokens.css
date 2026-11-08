@@ -1,0 +1,20 @@
+/* Hallmark · macrostructure: Index-First · genre: modern-minimal · theme: DPO brand
+ * scope: search results · pre-emit critique: P4 H5 E4 S5 R5 V4 */
+.search-page {
+  --color-paper: #fff;
+  --color-paper-soft: #f5f7fb;
+  --color-ink: #182442;
+  --color-ink-soft: #59667e;
+  --color-rule: #e1e6ef;
+  --color-accent: var(--primary);
+  --color-focus: #0085a7;
+  --font-body: 'Defago Noto Sans Lao', 'Noto Sans Lao', Arial, sans-serif;
+  --space-xs: 8px;
+  --space-sm: 16px;
+  --space-md: 24px;
+  --space-lg: 32px;
+  --space-xl: 48px;
+  --radius-input: 8px;
+  --radius-image: 4px;
+  --dur-short: 180ms;
+}

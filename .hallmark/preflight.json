@@ -1,0 +1,21 @@
+{
+  "scope": "search results page",
+  "framework": "React 19 + Vite 8",
+  "font": {
+    "family": "Defago Noto Sans Lao",
+    "source": "src/index.css:1358"
+  },
+  "palette": {
+    "primary": "#10218b",
+    "accent": "#01a0c6",
+    "source": "src/index.css:4"
+  },
+  "motion": "GSAP installed; search uses restrained state transitions",
+  "preserve": [
+    "existing header and footer",
+    "brand palette",
+    "Lao font",
+    "API routes"
+  ],
+  "tokens": "tokens.css"
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "date": "2026-11-08",
+    "scope": "single-page search redesign",
+    "macrostructure": "Index-First",
+    "theme": "DPO brand",
+    "reference": "https://www.dpo.gov.la/?s=ຄະນະ&submit=",
+    "brief": "Thumbnail results with title and date, working filters and useful empty states",
+    "nav": "existing DPO navigation preserved",
+    "footer": "existing DPO footer preserved",
+    "critique": {
+      "P": 4,
+      "H": 5,
+      "E": 4,
+      "S": 5,
+      "R": 5,
+      "V": 4
+    }
+  }
+]
