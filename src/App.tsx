@@ -38,6 +38,7 @@ import { request, useApi, mediaUrl, date, trackVisit, type ChatReply, type ChatS
 import { chatCopy, useLocale } from "./locale"
 import { ChatThinking, LoadingSkeleton, TypedAnswer } from "./feedback"
 import { chatLanguage } from "./chat"
+import { recordPageView, keepVisitorSessionActive } from "./analytics"
 
 gsap.registerPlugin(useGSAP, ScrollToPlugin)
 
@@ -881,7 +882,7 @@ function DpoChat() {
       <header className="dpo-chat-header"><img src={mediaUrl("/api/assets/dpo/chat-logo.png")} alt="" /><div><strong>{copy.title}</strong><span>{copy.subtitle}</span></div><button type="button" onClick={close} aria-label={copy.close}><FontAwesomeIcon icon={faXmark} /></button></header>
       <div ref={messagesRef} onScroll={event => { const element = event.currentTarget; followMessages.current = element.scrollHeight - element.clientHeight - element.scrollTop < 48 }} className="dpo-chat-messages" role="log" aria-live="polite" aria-relevant="additions" aria-label={copy.history}>
         <div className="dpo-chat-message assistant"><p>{copy.greeting}</p></div>
-        {messages.map((message, index) => <div key={index} className={`dpo-chat-message ${message.role}`}>{message.role === "assistant" ? <TypedAnswer text={message.text} language={message.language} onProgress={scrollMessages} /> : <p className="api-prose" lang={message.language}>{message.text}</p>}{!!message.choices?.length && <div className="dpo-chat-choices" role="group" aria-label="ເລືອກຫົວຂໍ້">{message.choices.map((choice, choiceIndex) => <button type="button" className="dpo-chat-choice" key={choice} lang={chatLanguage(choice)} disabled={pending} onClick={() => answer(choice)}>{choiceIndex + 1}. {choice}</button>)}</div>}{message.mode && <small className="dpo-chat-mode">{copy.search}</small>}{!!message.sources?.length && <div className="dpo-chat-sources"><strong>{copy.sources}</strong>{message.sources.map(source => <div key={source.id}>{message.language === "en" && source.language === "lo" && <small lang="en">{chatCopy.en.laoSource}</small>}<Link to={mediaUrl(source.url)} onClick={() => setOpen(false)}>{source.title} ↗</Link><details><summary>{copy.excerpt}</summary><p lang={source.language}>{source.excerpt}</p></details></div>)}</div>}</div>)}
+        {messages.map((message, index) => <div key={index} className={`dpo-chat-message ${message.role}`}>{message.role === "assistant" ? <TypedAnswer text={message.text} language={message.language} onProgress={scrollMessages} /> : <p className="api-prose" lang={message.language}>{message.text}</p>}{!!message.choices?.length && <div className="dpo-chat-choices" role="group" aria-label="ເລືອກຫົວຂໍ້">{message.choices.map((choice, choiceIndex) => <button type="button" className="dpo-chat-choice" key={choice} lang={chatLanguage(choice)} disabled={pending} onClick={() => answer(choice)}>{choiceIndex + 1}. {choice}</button>)}</div>}{message.mode && <small className="dpo-chat-mode">{copy.search}</small>}{!!message.sources?.length && <div className="dpo-chat-sources"><strong>{copy.sources}</strong>{message.sources.map(source => <div key={source.id}>{message.language === "en" && source.language === "lo" && <small lang="en">{chatCopy.en.laoSource}</small>}<Link to={mediaUrl(source.url)} onClick={() => setOpen(false)}>{source.title} ↗</Link></div>)}</div>}</div>)}
         {pending && <ChatThinking label={copy.pending} />}
         {chatError && <p role="alert">{copy.error}</p>}
       </div>
@@ -903,6 +904,9 @@ export default function App() {
   const currentLocation = useRef(location)
   const navigationType = useRef<"initial" | "push" | "pop">("initial")
   const mainRef = useRef<HTMLElement>(null)
+
+  useEffect(() => { recordPageView(location.path,location.search) }, [location.path,location.search])
+  useEffect(keepVisitorSessionActive, [])
 
   useGSAP((_, contextSafe) => {
     if (!contextSafe) return
