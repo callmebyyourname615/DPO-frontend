@@ -12,7 +12,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=89&wpfd_file_id=2701&token=&preview=1",
-      "local": "/assets/dpo/documents/2701.pdf"
+      "local": "/api/assets/dpo/documents/2701.pdf"
     },
     {
       "id": "885",
@@ -26,7 +26,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=89&wpfd_file_id=885&token=&preview=1",
-      "local": "/assets/dpo/documents/885.pdf"
+      "local": "/api/assets/dpo/documents/885.pdf"
     }
   ],
   "notices": [
@@ -42,7 +42,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=91&wpfd_file_id=1787&token=&preview=1",
-      "local": "/assets/dpo/documents/1787.pdf"
+      "local": "/api/assets/dpo/documents/1787.pdf"
     },
     {
       "id": "2095",
@@ -56,7 +56,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=91&wpfd_file_id=2095&token=&preview=1",
-      "local": "/assets/dpo/documents/2095.pdf"
+      "local": "/api/assets/dpo/documents/2095.pdf"
     },
     {
       "id": "2108",
@@ -70,7 +70,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=91&wpfd_file_id=2108&token=&preview=1",
-      "local": "/assets/dpo/documents/2108.pdf"
+      "local": "/api/assets/dpo/documents/2108.pdf"
     },
     {
       "id": "2153",
@@ -84,7 +84,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=91&wpfd_file_id=2153&token=&preview=1",
-      "local": "/assets/dpo/documents/2153.pdf"
+      "local": "/api/assets/dpo/documents/2153.pdf"
     },
     {
       "id": "2319",
@@ -98,7 +98,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=91&wpfd_file_id=2319&token=&preview=1",
-      "local": "/assets/dpo/documents/2319.pdf"
+      "local": "/api/assets/dpo/documents/2319.pdf"
     },
     {
       "id": "2320",
@@ -112,7 +112,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=91&wpfd_file_id=2320&token=&preview=1",
-      "local": "/assets/dpo/documents/2320.pdf"
+      "local": "/api/assets/dpo/documents/2320.pdf"
     },
     {
       "id": "2372",
@@ -126,7 +126,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=91&wpfd_file_id=2372&token=&preview=1",
-      "local": "/assets/dpo/documents/2372.pdf"
+      "local": "/api/assets/dpo/documents/2372.pdf"
     }
   ],
   "forms": [
@@ -142,7 +142,7 @@
       ],
       "ext": "xlsx",
       "preview": "",
-      "local": "/assets/dpo/documents/2161.xlsx"
+      "local": "/api/assets/dpo/documents/2161.xlsx"
     },
     {
       "id": "2160",
@@ -156,7 +156,7 @@
       ],
       "ext": "xlsx",
       "preview": "",
-      "local": "/assets/dpo/documents/2160.xlsx"
+      "local": "/api/assets/dpo/documents/2160.xlsx"
     }
   ],
   "guidance": [
@@ -172,7 +172,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=99&wpfd_file_id=3298&token=&preview=1",
-      "local": "/assets/dpo/documents/3298.pdf"
+      "local": "/api/assets/dpo/documents/3298.pdf"
     },
     {
       "id": "3299",
@@ -186,7 +186,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=99&wpfd_file_id=3299&token=&preview=1",
-      "local": "/assets/dpo/documents/3299.pdf"
+      "local": "/api/assets/dpo/documents/3299.pdf"
     },
     {
       "id": "1660",
@@ -200,7 +200,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=99&wpfd_file_id=1660&token=&preview=1",
-      "local": "/assets/dpo/documents/1660.pdf"
+      "local": "/api/assets/dpo/documents/1660.pdf"
     },
     {
       "id": "2154",
@@ -214,7 +214,7 @@
       ],
       "ext": "pdf",
       "preview": "https://www.dpo.gov.la/wp-admin/admin-ajax.php?juwpfisadmin=false&action=wpfd&task=file.download&wpfd_category_id=99&wpfd_file_id=2154&token=&preview=1",
-      "local": "/assets/dpo/documents/2154.pdf"
+      "local": "/api/assets/dpo/documents/2154.pdf"
     }
   ]
 }

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync, statSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { gsap } from 'gsap'
 
 const assets = JSON.parse(readFileSync(new URL('../src/data/assets.json', import.meta.url)))
@@ -32,7 +32,9 @@ const localFiles = [...new Set(Object.entries(assets)
   .filter(([id, asset]) => /^(home|shared|footer)\./.test(id) && asset.kind !== 'map')
   .map(([, asset]) => asset.src))]
 for (const file of localFiles) {
-  assert(statSync(new URL(`../public${file}`, import.meta.url)).size > 0, file)
+  const response = await fetch(`${process.env.DPO_API_ORIGIN || "http://localhost:3000"}${file}`, { method: "HEAD" })
+  assert.equal(response.status, 200, file)
+  assert(Number(response.headers.get("content-length")) > 0, file)
 }
 assert.equal(new Set(Array.from({ length: 5 }, (_, i) => assets[`home.hero-${i + 1}`].src)).size, 5)
-console.log(`Passed: 3 integer counters, GSAP cleanup, 5 banner files, ${localFiles.length} local Home/shared/footer assets.`)
+console.log(`Passed: 3 integer counters, GSAP cleanup, 5 banner files, ${localFiles.length} API Home/shared/footer assets.`)

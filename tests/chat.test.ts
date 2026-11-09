@@ -1,6 +1,6 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
-import { findFaqs } from "../src/chat.ts"
+import { chatLanguage, findFaqs } from "../src/chat.ts"
 
 const faqs = [
   { id: "1", question: "1. ການປົກປ້ອງເງິນຝາກ ແມ່ນຫຍັງ?", answer: "Deposit protection" },
@@ -20,4 +20,10 @@ test("returns choices for an ambiguous topic", () => {
 test("does not invent answers for missing, unrelated or empty questions", () => {
   for (const query of ["", "?", "a", "weather tomorrow", "<script>alert(1)</script>"]) assert.deepEqual(findFaqs(query, faqs), [])
   assert.deepEqual(findFaqs("DPO", []), [])
+})
+
+test("chat follows the question language without a language button", () => {
+  assert.equal(chatLanguage("How do I contact DPO?"), "en")
+  assert.equal(chatLanguage("ຕິດຕໍ່ DPO ໄດ້ແນວໃດ?"), "lo")
+  assert.equal(chatLanguage("ສະບາຍດີ hello"), "lo")
 })

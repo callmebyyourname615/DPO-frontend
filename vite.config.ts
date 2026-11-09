@@ -1,4 +1,4 @@
-import { defineConfig, type HtmlTagDescriptor, type Plugin } from "vite"
+import { defineConfig, loadEnv, type HtmlTagDescriptor, type Plugin } from "vite"
 import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 import fs from "node:fs"
@@ -10,6 +10,8 @@ import siteConfiguration from "./.figma/make/site.json"
 export default defineConfig(({ mode }) => {
   // .figma/make/deploy-preview passes `--mode development` for cached-preview builds.
   const emitSourcemaps = mode === "development"
+  const apiOrigin = (process.env.VITE_DPO_API_BASE_URL || loadEnv(mode, process.cwd(), "VITE_").VITE_DPO_API_BASE_URL || "").replace(/\/$/, "")
+  const assetOrigin = (source: string) => source.replace(/\/api\/assets\//g, () => `${apiOrigin}/api/assets/`)
 
   return {
     base: process.env.FIGMA_PUBLIC_URL
@@ -20,9 +22,17 @@ export default defineConfig(({ mode }) => {
       minify: !emitSourcemaps,
     },
     plugins: [
+      {
+        name: "dpo-api-asset-origin",
+        enforce: "pre",
+        transform(code, id) {
+          if (id.split("?")[0].endsWith(".css")) return assetOrigin(code)
+        },
+        transformIndexHtml: { order: "pre", handler: assetOrigin },
+      },
       react(),
       tailwindcss(),
-      figmaSiteConfiguration(siteConfiguration),
+      figmaSiteConfiguration(siteConfiguration, apiOrigin),
       figmaErrorOverlayReplay(),
       figmaReactRefreshBoundaryFallback(),
       figmaMakeKitPlugin({ storiesGlob: "/src/**/*.stories.{ts,tsx,js,jsx}" }),
@@ -77,7 +87,7 @@ type FigmaSiteConfiguration = {
 }
 
 /** Applies /.figma/make/site.json to the generated document shell. */
-function figmaSiteConfiguration(config: FigmaSiteConfiguration): Plugin {
+function figmaSiteConfiguration(config: FigmaSiteConfiguration, apiOrigin = ""): Plugin {
   function sanitizeHtmlValue(value: string | undefined): string {
     return value?.replace(/[^a-zA-Z0-9_-]/g, "") || ""
   }
@@ -99,7 +109,7 @@ function figmaSiteConfiguration(config: FigmaSiteConfiguration): Plugin {
   const description = config.description ?? ""
   // Imported HTML keeps its own favicon. New Makes use PNG because Google Search does not
   // support SVG favicons, even though browsers do.
-  const favicon = config.icons?.icon ?? "/favicon.png"
+  const favicon = config.icons?.icon ?? `${apiOrigin}/api/assets/favicon.png`
   const socialImage = config.openGraph?.image ?? ""
   const language = sanitizeHtmlValue(config.language) || "en"
   const googleAnalyticsId = sanitizeHtmlValue(

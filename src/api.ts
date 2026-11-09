@@ -44,5 +44,7 @@ export function trackVisit(): Promise<VisitorStats> {
   return promise
 }
 
-export type ChatSource = { id: string; title: string; url: string; excerpt: string }
-export type ChatReply = { answer: string; mode: "ai" | "search"; sources: ChatSource[] }
+export type ChatSource = { id: string; title: string; url: string; excerpt: string; language?: "lo" | "en" }
+export type ChatReply = { answer: string; mode: "search"; sources: ChatSource[]; choices?: string[] }
+
+export type ChatSuggestion = Faq & { language: "lo" | "en" }

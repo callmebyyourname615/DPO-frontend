@@ -34,8 +34,10 @@ import {
   faPaperPlane,
 } from "@fortawesome/free-solid-svg-icons"
 import { faFacebookF, faYoutube } from "@fortawesome/free-brands-svg-icons"
-import { request, useApi, mediaUrl, date, trackVisit, type ChatReply, type ChatSource, type VisitorStats, type List, type News, type Document, type Faq, type Partner, type Page, type Settings, type Home } from "./api"
-import { useLocale } from "./locale"
+import { request, useApi, mediaUrl, date, trackVisit, type ChatReply, type ChatSource, type ChatSuggestion, type VisitorStats, type List, type News, type Document, type Faq, type Partner, type Page, type Settings, type Home } from "./api"
+import { chatCopy, useLocale } from "./locale"
+import { ChatThinking, LoadingSkeleton, TypedAnswer } from "./feedback"
+import { chatLanguage } from "./chat"
 
 gsap.registerPlugin(useGSAP, ScrollToPlugin)
 
@@ -49,7 +51,6 @@ const paths = {
   forms: "/ແບບພິມ/",
   guidance: "/ບົດແນະນໍາ-ແລະ-ຄໍາແນະນໍາ/",
   bilateral: "/ການຮ່ວມມືສອງຝ່າຍ/",
-  cooperationCategory: "/category/ການຮ່ວມມືສາກົນ/",
   international: "/ການເຄື່ອນໄຫວວຽກງານຮ່ວມ/",
   news: "/ຂ່າວສານ/",
   contact: "/ຕິດຕໍ່/",
@@ -76,9 +77,9 @@ type MediaAsset = {
   natural?: boolean
 }
 const homeAssets: Record<string, MediaAsset | undefined> = {
-  "shared.brand-logo": { kind: "image", src: "/assets/dpo/22844fe243f16f4e.png", alt: "DPO" },
-  "shared.flag-la": { kind: "image", src: "/assets/dpo/2645823a0e1ba640.png", alt: "LA" },
-  "shared.flag-en": { kind: "image", src: "/assets/dpo/d5c7675bf1b02712.png", alt: "EN" },
+  "shared.brand-logo": { kind: "image", src: mediaUrl("/api/assets/dpo/22844fe243f16f4e.png"), alt: "DPO" },
+  "shared.flag-la": { kind: "image", src: mediaUrl("/api/assets/dpo/2645823a0e1ba640.png"), alt: "LA" },
+  "shared.flag-en": { kind: "image", src: mediaUrl("/api/assets/dpo/d5c7675bf1b02712.png"), alt: "EN" },
 }
 
 function AssetPlaceholder({
@@ -98,9 +99,9 @@ function AssetPlaceholder({
 }
 
 function navigate(path: string) {
+  if (new URL(path, window.location.href).href === window.location.href) return
   window.history.pushState({}, "", path)
-  window.dispatchEvent(new PopStateEvent("popstate"))
-  window.scrollTo({ top: 0, behavior: "smooth" })
+  window.dispatchEvent(new Event("dpo:navigate"))
 }
 
 function Link({
@@ -121,6 +122,7 @@ function Link({
       onClick={(event) => {
         if (
           !event.defaultPrevented &&
+          to.startsWith("/") && !to.startsWith("//") && !to.startsWith("/api/") && !to.startsWith("/assets/") &&
           event.button === 0 &&
           !event.metaKey &&
           !event.ctrlKey &&
@@ -165,7 +167,6 @@ const menu: MenuItem[] = [
   },
   {
     label: "ຮ່ວມມືສາກົນ",
-    to: paths.cooperationCategory,
     children: [
       { label: "ການຮ່ວມມືສອງຝ່າຍ", to: paths.bilateral },
       { label: "ການເຄື່ອນໄຫວວຽກງານຮ່ວມມືສາກົນ", to: paths.international },
@@ -495,7 +496,8 @@ function PageTitle({ title }: { title: string }) {
   return <nav className="title-band" aria-label="Breadcrumb"><div className="container breadcrumb-content"><Link to="/" aria-label={t("ໜ້າຫຼັກ")}><FontAwesomeIcon icon={faHouse} aria-hidden="true" /></Link><FontAwesomeIcon className="breadcrumb-separator" icon={faAnglesRight} aria-hidden="true" /><span lang={t(title) !== title ? locale : "lo"} aria-current="page">{t(title)}</span></div></nav>
 }
 function ApiState({ loading, error, empty }: { loading: boolean; error: string; empty?: boolean }) {
-  return loading ? <p role="status">ກຳລັງໂຫຼດຂໍ້ມູນ...</p> : error ? <p role="alert">{error} · ກະລຸນາລອງໃໝ່</p> : empty ? <p role="status">ບໍ່ພົບຂໍ້ມູນ</p> : null
+  const { locale } = useLocale()
+  return loading ? <LoadingSkeleton label={locale === "en" ? "Loading content…" : "ກຳລັງໂຫຼດຂໍ້ມູນ..."} /> : error ? <p role="alert">{error} · ກະລຸນາລອງໃໝ່</p> : empty ? <p role="status">ບໍ່ພົບຂໍ້ມູນ</p> : null
 }
 function Footer() {
   const settings = useApi<Settings>("/site-settings")
@@ -570,20 +572,19 @@ function DocumentsPage({ category, title }: { category: string; title: string })
   const [query, setQuery] = useState(""); const [term, setTerm] = useState(""); const [page, setPage] = useState(1)
   const params = new URLSearchParams({ category, page: String(page), limit: "12" }); if (term) params.set("q", term)
   const result = useApi<List<Document>>(`/documents?${params}`)
-  if (["decree", "agreement", "notice", "form", "guideline", "fsnp", "general"].includes(category)) return <><PageTitle title={title} /><section className="section container decrees-page"><h1>{category === "fsnp" ? "Lao PDR Financial Sector Safety Net Strengthening" : category === "general" ? "ເອກະສານ ຂໍ້ມູນຕ່າງໆ" : `ເອກະສານໄຟລ໌ ${title}`}</h1>{category !== "fsnp" && <form className="decrees-search decree-search-form" onSubmit={event => { event.preventDefault(); setTerm(query.trim()); setPage(1) }}><FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" /><input type="search" aria-label="ຄົ້ນຫາເອກະສານ" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search files..." /><button type="submit">ຄົ້ນຫາ</button></form>}<div className="decrees-category">» {title}</div><div className="decrees-layout"><div className="decrees-tree" aria-hidden="true" /><div><div className="decrees-grid">{result.data?.data.map(file => <article className="decree-card" key={file.id}><img className="decree-icon" src={file.fileType?.toLowerCase() === "xlsx" ? "/assets/dpo/excel.png" : "/assets/dpo/pdf.svg"} alt="" /><div className="decree-content"><h2>{file.title}</h2><dl>{file.fileSize != null && <div><dt>Size:</dt><dd>{(file.fileSize / 1048576).toFixed(2)} MB</dd></div>}{file.documentDate && <div><dt>Date:</dt><dd>{date(file.documentDate)}</dd></div>}</dl></div>{file.fileUrl && <div className="decree-actions"><a className="decree-download" href={mediaUrl(file.fileUrl)} target="_blank" rel="noreferrer">ດາວໂຫລດ <FontAwesomeIcon icon={faCloudArrowDown} aria-hidden="true" /></a>{file.fileType?.toLowerCase() !== "xlsx" && <a className="decree-preview" href={mediaUrl(file.fileUrl)} target="_blank" rel="noreferrer">ເປີດເບິ່ງ <FontAwesomeIcon icon={faExpand} aria-hidden="true" /></a>}</div>}</article>)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></div></div></section></>
-  return <><PageTitle title={title} /><section className="section container decrees-page"><h1>{title}</h1><form className="decrees-search" onSubmit={event => { event.preventDefault(); setTerm(query.trim()); setPage(1) }}><FontAwesomeIcon icon={faMagnifyingGlass} /><input aria-label="ຄົ້ນຫາເອກະສານ" value={query} onChange={event => setQuery(event.target.value)} placeholder="ຄົ້ນຫາເອກະສານ..." /><button type="submit">ຄົ້ນຫາ</button></form><div className="decrees-grid">{result.data?.data.map(file => <article className="decree-card" key={file.id}><img className="decree-icon" src={file.fileType?.toLowerCase() === "xlsx" ? "/assets/dpo/excel.png" : "/assets/dpo/pdf.svg"} alt="" /><div className="decree-content"><h2>{file.title}</h2><p>{date(file.documentDate)} {file.fileSize ? ` · ${(file.fileSize / 1024).toFixed(0)} KB` : ""}</p></div>{file.fileUrl && <div className="decree-actions"><a className="decree-download" href={mediaUrl(file.fileUrl)} target="_blank" rel="noreferrer">ເປີດໄຟລ໌ <FontAwesomeIcon icon={faCloudArrowDown} /></a></div>}</article>)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></section></>
+  if (["decree", "agreement", "notice", "form", "guideline", "fsnp", "general"].includes(category)) return <><PageTitle title={title} /><section className="section container decrees-page"><h1>{category === "fsnp" ? "Lao PDR Financial Sector Safety Net Strengthening" : category === "general" ? "ເອກະສານ ຂໍ້ມູນຕ່າງໆ" : `ເອກະສານໄຟລ໌ ${title}`}</h1>{category !== "fsnp" && <form className="decrees-search decree-search-form" onSubmit={event => { event.preventDefault(); setTerm(query.trim()); setPage(1) }}><FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" /><input type="search" aria-label="ຄົ້ນຫາເອກະສານ" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search files..." /><button type="submit">ຄົ້ນຫາ</button></form>}<div className="decrees-category">» {title}</div><div className="decrees-layout"><div className="decrees-tree" aria-hidden="true" /><div><div className="decrees-grid">{result.data?.data.map(file => <article className="decree-card" key={file.id}><img className="decree-icon" src={mediaUrl(file.fileType?.toLowerCase() === "xlsx" ? "/api/assets/dpo/excel.png" : "/api/assets/dpo/pdf.svg")} alt="" /><div className="decree-content"><h2>{file.title}</h2><dl>{file.fileSize != null && <div><dt>Size:</dt><dd>{(file.fileSize / 1048576).toFixed(2)} MB</dd></div>}{file.documentDate && <div><dt>Date:</dt><dd>{date(file.documentDate)}</dd></div>}</dl></div>{file.fileUrl && <div className="decree-actions"><a className="decree-download" href={mediaUrl(file.fileUrl)} target="_blank" rel="noreferrer">ດາວໂຫລດ <FontAwesomeIcon icon={faCloudArrowDown} aria-hidden="true" /></a>{file.fileType?.toLowerCase() !== "xlsx" && <a className="decree-preview" href={mediaUrl(file.fileUrl)} target="_blank" rel="noreferrer">ເປີດເບິ່ງ <FontAwesomeIcon icon={faExpand} aria-hidden="true" /></a>}</div>}</article>)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></div></div></section></>
+  return <><PageTitle title={title} /><section className="section container decrees-page"><h1>{title}</h1><form className="decrees-search" onSubmit={event => { event.preventDefault(); setTerm(query.trim()); setPage(1) }}><FontAwesomeIcon icon={faMagnifyingGlass} /><input aria-label="ຄົ້ນຫາເອກະສານ" value={query} onChange={event => setQuery(event.target.value)} placeholder="ຄົ້ນຫາເອກະສານ..." /><button type="submit">ຄົ້ນຫາ</button></form><div className="decrees-grid">{result.data?.data.map(file => <article className="decree-card" key={file.id}><img className="decree-icon" src={mediaUrl(file.fileType?.toLowerCase() === "xlsx" ? "/api/assets/dpo/excel.png" : "/api/assets/dpo/pdf.svg")} alt="" /><div className="decree-content"><h2>{file.title}</h2><p>{date(file.documentDate)} {file.fileSize ? ` · ${(file.fileSize / 1024).toFixed(0)} KB` : ""}</p></div>{file.fileUrl && <div className="decree-actions"><a className="decree-download" href={mediaUrl(file.fileUrl)} target="_blank" rel="noreferrer">ເປີດໄຟລ໌ <FontAwesomeIcon icon={faCloudArrowDown} /></a></div>}</article>)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></section></>
 }
 function BilateralPage() {
   const [page, setPage] = useState(1)
   const result = useApi<List<News>>(`/news?category=international&page=${page}&limit=5`)
   return <><PageTitle title="ການຮ່ວມມືສອງຝ່າຍ" /><section className="section container editorial-feed bilateral-feed">{result.data?.data.map(item => <article key={item.id}>{item.coverImageUrl && <Link to={`/${item.slug}/`}><img className="bilateral-image" src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" /></Link>}<div><h2><Link to={`/${item.slug}/`}>{item.title}</Link></h2>{item.publishedAt && <time>{date(item.publishedAt)}</time>}{item.excerpt && <p>{item.excerpt}</p>}<Link className="button primary" to={`/${item.slug}/`}>ອ່ານເພີ່ມເຕີມ</Link></div></article>)}<ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><div className="bilateral-page-pagination"><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></div></section></>
 }
-function NewsListPage({ international = false, initialPage = 1, titleOverride }: { international?: boolean; initialPage?: number; titleOverride?: string }) {
+function NewsListPage({ initialPage = 1 }: { initialPage?: number }) {
   const [page, setPage] = useState(initialPage)
-  const result = useApi<List<News>>(`/news?page=${page}&limit=${international ? 9 : 5}${international ? "&category=international" : ""}`)
-  const title = titleOverride || (international ? "ການຮ່ວມມືສາກົນ" : "ຂ່າວສານ")
-  if (!international) return <><PageTitle title={title} /><section className="section container content-sidebar cooperation-archive news-archive-page"><div><div className="archive-list">{result.data?.data.map(item => <article key={item.id}>{item.coverImageUrl && <Link to={`/${item.slug}/`} className="news-archive-image"><img src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" /></Link>}<div><h2><Link to={`/${item.slug}/`}>{item.title}</Link></h2>{item.publishedAt && <time>{date(item.publishedAt)}</time>}{item.excerpt && <p>{item.excerpt}</p>}<Link className="button primary" to={`/${item.slug}/`}>ອ່ານເພີ່ມເຕີມ</Link></div></article>)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></div><NewsArchiveSidebar /></section></>
-  return <><PageTitle title={title} /><section className="section container"><div className="api-news-grid">{result.data?.data.map(item => <NewsCard key={item.id} item={item} />)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></section></>
+  const result = useApi<List<News>>(`/news?page=${page}&limit=5`)
+  const title = "ຂ່າວສານ"
+  return <><PageTitle title={title} /><section className="section container content-sidebar cooperation-archive news-archive-page"><div><div className="archive-list">{result.data?.data.map(item => <article key={item.id}>{item.coverImageUrl && <Link to={`/${item.slug}/`} className="news-archive-image"><img src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" /></Link>}<div><h2><Link to={`/${item.slug}/`}>{item.title}</Link></h2>{item.publishedAt && <time>{date(item.publishedAt)}</time>}{item.excerpt && <p>{item.excerpt}</p>}<Link className="button primary" to={`/${item.slug}/`}>ອ່ານເພີ່ມເຕີມ</Link></div></article>)}</div><ApiState loading={result.loading} error={result.error} empty={result.data?.data.length === 0} /><Pagination page={page} totalPages={result.data?.totalPages ?? 0} setPage={setPage} /></div><NewsArchiveSidebar /></section></>
 }
 function NewsArchiveSidebar({ showSearch = true }: { showSearch?: boolean } = {}) {
   const news = useApi<List<News>>("/news?limit=5")
@@ -626,7 +627,7 @@ function IadiArticle() {
     window.addEventListener("keydown", close)
     return () => window.removeEventListener("keydown", close)
   }, [selectedImage])
-  return <><PageTitle title={result.data?.title || "ຂ່າວສານ"} /><section className="section container content-sidebar cooperation-archive iadi-page"><article><ApiState loading={result.loading} error={result.error} />{result.data && <><div className="iadi-gallery">{result.data.gallery?.map((url, index) => <button key={url} onClick={() => setSelectedImage(mediaUrl(url))} aria-label={`ເບິ່ງຮູບ ${index + 1}`}><img src={mediaUrl(url)} alt="" loading="lazy" /></button>)}</div><div className="iadi-copy">{result.data.content?.split(/\n\s*\n/).filter(Boolean).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div><div className="iadi-categories"><Link to={paths.cooperationCategory}>ການຮ່ວມມືສາກົນ</Link></div>{!!result.data.related?.length && <><h2 className="iadi-related-title">ຂ່າວທີ່ກ່ຽວຂ້ອງ...</h2><div className="iadi-related">{result.data.related.map(item => <Link key={item.id} to={`/${item.slug}/`}>{item.coverImageUrl && <img src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" />}<strong>{item.title}</strong></Link>)}</div></>}</>}</article><aside className="cooperation-sidebar"><div className="cooperation-widget"><SearchBox /></div><div className="cooperation-widget"><h3>ຂ່າວສານ ອື່ນໆ</h3>{recent.data?.data.map(item => <Link className="cooperation-recent" key={item.id} to={`/${item.slug}/`}>{item.coverImageUrl && <img src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" />}<strong>{item.title}</strong>{item.publishedAt && <time>{date(item.publishedAt)}</time>}</Link>)}<ApiState loading={recent.loading} error={recent.error} /></div>{!!partners.data?.data.length && <div className="cooperation-widget cooperation-partners"><h3>ໜ້າເຊື່ອມຕໍ່ເວັບຕ່າງໆ</h3>{partners.data.data.filter(item => item.logoUrl).map(item => <a key={item.id} href={item.url} target="_blank" rel="noreferrer"><img src={mediaUrl(item.logoUrl)} alt={item.name} loading="lazy" /></a>)}</div>}</aside></section>{selectedImage && <div className="iadi-lightbox" role="dialog" aria-modal="true" aria-label="ຮູບພາບ" onClick={() => setSelectedImage(null)}><button autoFocus onClick={() => setSelectedImage(null)} aria-label="ປິດ">×</button><img src={selectedImage} alt={result.data?.title || ""} /></div>}</>
+  return <><PageTitle title={result.data?.title || "ຂ່າວສານ"} /><section className="section container content-sidebar cooperation-archive iadi-page"><article><ApiState loading={result.loading} error={result.error} />{result.data && <><div className="iadi-gallery">{result.data.gallery?.map((url, index) => <button key={url} onClick={() => setSelectedImage(mediaUrl(url))} aria-label={`ເບິ່ງຮູບ ${index + 1}`}><img src={mediaUrl(url)} alt="" loading="lazy" /></button>)}</div><div className="iadi-copy">{result.data.content?.split(/\n\s*\n/).filter(Boolean).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div><div className="iadi-categories"><span>ການຮ່ວມມືສາກົນ</span></div>{!!result.data.related?.length && <><h2 className="iadi-related-title">ຂ່າວທີ່ກ່ຽວຂ້ອງ...</h2><div className="iadi-related">{result.data.related.map(item => <Link key={item.id} to={`/${item.slug}/`}>{item.coverImageUrl && <img src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" />}<strong>{item.title}</strong></Link>)}</div></>}</>}</article><aside className="cooperation-sidebar"><div className="cooperation-widget"><SearchBox /></div><div className="cooperation-widget"><h3>ຂ່າວສານ ອື່ນໆ</h3>{recent.data?.data.map(item => <Link className="cooperation-recent" key={item.id} to={`/${item.slug}/`}>{item.coverImageUrl && <img src={mediaUrl(item.coverImageUrl)} alt="" loading="lazy" />}<strong>{item.title}</strong>{item.publishedAt && <time>{date(item.publishedAt)}</time>}</Link>)}<ApiState loading={recent.loading} error={recent.error} /></div>{!!partners.data?.data.length && <div className="cooperation-widget cooperation-partners"><h3>ໜ້າເຊື່ອມຕໍ່ເວັບຕ່າງໆ</h3>{partners.data.data.filter(item => item.logoUrl).map(item => <a key={item.id} href={item.url} target="_blank" rel="noreferrer"><img src={mediaUrl(item.logoUrl)} alt={item.name} loading="lazy" /></a>)}</div>}</aside></section>{selectedImage && <div className="iadi-lightbox" role="dialog" aria-modal="true" aria-label="ຮູບພາບ" onClick={() => setSelectedImage(null)}><button autoFocus onClick={() => setSelectedImage(null)} aria-label="ປິດ">×</button><img src={selectedImage} alt={result.data?.title || ""} /></div>}</>
 }
 function ContentPage({ slug, title }: { slug: string; title: string }) {
   const result = useApi<Page>(`/pages/${encodeURIComponent(slug)}`)
@@ -685,7 +686,7 @@ function InquiryForm({ source }: { source: "contact" | "faq" }) {
 }
 function ContactPage() {
   const settings = useApi<Settings>("/site-settings"); const data = settings.data
-  return <div className="contact-page"><PageTitle title="ຕິດຕໍ່" /><section className="section container"><ApiState loading={settings.loading} error={settings.error} />{data && <div className="contact-cards"><div className="contact-item"><FontAwesomeIcon icon={faEnvelope} aria-hidden="true" /><div><b>ອີເມວ</b><a href={`mailto:${data.email}`}>{data.email}</a></div></div><div className="contact-item"><FontAwesomeIcon icon={faPhoneVolume} aria-hidden="true" /><div><b>ເບີໂທ</b><a href={`tel:${data.phone}`}>{data.phone}</a></div></div><div className="contact-item"><FontAwesomeIcon icon={faLocationDot} aria-hidden="true" /><div><b>ທີ່ຢູ່</b><span className="contact-address">{data.address}</span></div></div></div>}<div className="contact-grid"><div><h2>ກາລຸນາໃຫ້ຄຳຄິດເຫັນໃນຟອມລຸ່ມນີ້</h2><InquiryForm source="contact" /></div>{data?.mapEmbedUrl && <iframe className="contact-map" src={data.mapEmbedUrl} title="ແຜນທີ່" loading="lazy" />}</div><div className="qr-wrap"><h2>QR CODE MAPS</h2><img src="/assets/dpo/contact-qr.png" width="202" height="202" alt="QR code ແຜນທີ່ສຳນັກງານປົກປ້ອງເງິນຝາກ" /></div>{data?.phone && <PhoneLink phone={data.phone} className="contact-phone" />}</section></div>
+  return <div className="contact-page"><PageTitle title="ຕິດຕໍ່" /><section className="section container"><ApiState loading={settings.loading} error={settings.error} />{data && <div className="contact-cards"><div className="contact-item"><FontAwesomeIcon icon={faEnvelope} aria-hidden="true" /><div><b>ອີເມວ</b><a href={`mailto:${data.email}`}>{data.email}</a></div></div><div className="contact-item"><FontAwesomeIcon icon={faPhoneVolume} aria-hidden="true" /><div><b>ເບີໂທ</b><a href={`tel:${data.phone}`}>{data.phone}</a></div></div><div className="contact-item"><FontAwesomeIcon icon={faLocationDot} aria-hidden="true" /><div><b>ທີ່ຢູ່</b><span className="contact-address">{data.address}</span></div></div></div>}<div className="contact-grid"><div><h2>ກາລຸນາໃຫ້ຄຳຄິດເຫັນໃນຟອມລຸ່ມນີ້</h2><InquiryForm source="contact" /></div>{data?.mapEmbedUrl && <iframe className="contact-map" src={data.mapEmbedUrl} title="ແຜນທີ່" loading="lazy" />}</div><div className="qr-wrap"><h2>QR CODE MAPS</h2><img src={mediaUrl("/api/assets/dpo/contact-qr.png")} width="202" height="202" alt="QR code ແຜນທີ່ສຳນັກງານປົກປ້ອງເງິນຝາກ" /></div>{data?.phone && <PhoneLink phone={data.phone} className="contact-phone" />}</section></div>
 }
 function FaqItem({ item }: { item: Faq }) {
   const [open, setOpen] = useState(false)
@@ -737,7 +738,7 @@ function SearchResults() {
         <div className="search-main">
           <div className="search-result-heading"><h2>{query ? <>{en ? "Results for" : "ຜົນຄົ້ນຫາສຳລັບ"} <span>“{query}”</span></> : en ? "Start your search" : "ເລີ່ມຄົ້ນຫາຂໍ້ມູນ"}</h2><span role="status">{query && result.data && !result.loading && `${items.length}${[result.data.news, result.data.documents, result.data.pages].some(group => group.length === 100) ? "+" : ""} ${en ? "results" : "ຜົນລັບ"}`}</span></div>
           {query && <div className="search-filters" role="group" aria-label={en ? "Filter results" : "ປະເພດຜົນຄົ້ນຫາ"}>{Object.entries(labels).map(([key, label]) => <button type="button" key={key} aria-pressed={filter === key} onClick={() => { setFilter(key); setPage(1) }}>{label}<span>{key === "all" ? items.length : items.filter(item => item.type === key).length}</span></button>)}</div>}
-          {result.loading ? <div className="search-feedback" role="status"><FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" /><h3>{en ? "Searching the website…" : "ກຳລັງຄົ້ນຫາຂໍ້ມູນ..."}</h3></div> : result.error ? <div className="search-feedback" role="alert"><h3>{en ? "We could not load the results" : "ບໍ່ສາມາດໂຫຼດຜົນຄົ້ນຫາໄດ້"}</h3><p>{result.error}</p><button type="button" onClick={() => window.location.reload()}>{en ? "Try again" : "ລອງໃໝ່"}</button></div> : !query || filtered.length === 0 ? <div className="search-feedback"><FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" /><h3>{!query ? en ? "What would you like to know?" : "ທ່ານຕ້ອງການຮູ້ກ່ຽວກັບຫຍັງ?" : en ? "No matching results" : "ບໍ່ພົບຂໍ້ມູນທີ່ກົງກັນ"}</h3><p>{en ? "Try a shorter keyword, check your spelling, or choose a topic below." : "ລອງໃຊ້ຄຳທີ່ສັ້ນລົງ, ກວດກາການສະກົດ ຫຼື ເລືອກຫົວຂໍ້ດ້ານລຸ່ມ."}</p>{filter !== "all" && items.length > 0 && <button type="button" onClick={() => setFilter("all")}>{en ? "View all results" : "ເບິ່ງຜົນລັບທັງໝົດ"}</button>}<div className="search-topic-links">{suggestions.map(topic => <button type="button" key={topic} onClick={() => search(topic)}>{topic}<span aria-hidden="true">↗</span></button>)}</div></div> : <>
+          {result.loading ? <LoadingSkeleton label={en ? "Searching the website…" : "ກຳລັງຄົ້ນຫາຂໍ້ມູນ..."} /> : result.error ? <div className="search-feedback" role="alert"><h3>{en ? "We could not load the results" : "ບໍ່ສາມາດໂຫຼດຜົນຄົ້ນຫາໄດ້"}</h3><p>{result.error}</p><button type="button" onClick={() => window.location.reload()}>{en ? "Try again" : "ລອງໃໝ່"}</button></div> : !query || filtered.length === 0 ? <div className="search-feedback"><FontAwesomeIcon icon={faMagnifyingGlass} aria-hidden="true" /><h3>{!query ? en ? "What would you like to know?" : "ທ່ານຕ້ອງການຮູ້ກ່ຽວກັບຫຍັງ?" : en ? "No matching results" : "ບໍ່ພົບຂໍ້ມູນທີ່ກົງກັນ"}</h3><p>{en ? "Try a shorter keyword, check your spelling, or choose a topic below." : "ລອງໃຊ້ຄຳທີ່ສັ້ນລົງ, ກວດກາການສະກົດ ຫຼື ເລືອກຫົວຂໍ້ດ້ານລຸ່ມ."}</p>{filter !== "all" && items.length > 0 && <button type="button" onClick={() => setFilter("all")}>{en ? "View all results" : "ເບິ່ງຜົນລັບທັງໝົດ"}</button>}<div className="search-topic-links">{suggestions.map(topic => <button type="button" key={topic} onClick={() => search(topic)}>{topic}<span aria-hidden="true">↗</span></button>)}</div></div> : <>
             <div className="search-result-list" aria-label={labels[filter]}>{visible.map(item => <article className="search-result-row" key={item.key}>
               <div className="search-result-image">{item.image ? <Link to={item.url!}><img src={mediaUrl(item.image)} alt={item.title} loading="lazy" /></Link> : <FontAwesomeIcon icon={item.type === "documents" ? faCloudArrowDown : faPenToSquare} aria-hidden="true" />}</div>
               <div className="search-result-copy"><span className="search-result-type">{labels[item.type]}</span><h3>{!item.url ? item.title : item.type === "documents" ? <a href={item.url} target="_blank" rel="noreferrer">{item.title}<span className="sr-only"> ({en ? "opens in a new tab" : "ເປີດໃນແຖບໃໝ່"})</span></a> : <Link to={item.url}>{item.title}</Link>}</h3>{item.publishedAt && <time dateTime={item.publishedAt}>{date(item.publishedAt)}</time>}{!item.url && <span className="search-file-missing">{en ? "File currently unavailable" : "ໄຟລ໌ຍັງບໍ່ພ້ອມໃຫ້ດາວໂຫຼດ"}</span>}</div>
@@ -756,7 +757,6 @@ function AppPage({ path }: { path: string }) {
   const newsArchive = path.match(/^\/ຂ່າວສານ\/page\/(\d+)\/$/); if (newsArchive) return <NewsListPage initialPage={Number(newsArchive[1])} />
   if (path === paths.bilateral) return <BilateralPage />
   if (path === paths.international) return <><PageTitle title="ການເຄື່ອນໄຫວວຽກງານຮ່ວມມືສາກົນ" /><div className="section container content-sidebar"><section /><aside /></div></>
-  if (path === paths.cooperationCategory) return <NewsListPage international />
   if (path === paths.contact) return <ContactPage />
   if (path === paths.faq) return <FaqPage />
   if (path === paths.connections) return <PartnersPage />
@@ -782,15 +782,16 @@ function SocialRail() {
   return <div ref={rail} className={`social-rail${collapsed ? " collapsed" : ""}`} aria-label="Social links"><button type="button" aria-label={collapsed ? "Expand social links" : "Collapse social links"} aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}><FontAwesomeIcon icon={faArrowRight} className="social-toggle-icon" /></button>{links.map(link => <a className={link.className} key={link.label} href={link.href} target="_blank" rel="noreferrer" aria-label={link.label} onMouseEnter={event => expand(event.currentTarget, true)} onMouseLeave={event => expand(event.currentTarget, false)} onFocus={event => expand(event.currentTarget, true)} onBlur={event => expand(event.currentTarget, false)}><span className="social-label" aria-hidden="true">{link.label}</span><FontAwesomeIcon icon={link.icon} /></a>)}</div>
 }
 function DpoChat() {
-  const { locale } = useLocale()
+  const locale = "lo"
+  const copy = chatCopy.lo
   const [pending, setPending] = useState(false)
-  const [chatError, setChatError] = useState("")
+  const [chatError, setChatError] = useState(false)
   const requestRef = useRef<AbortController | null>(null)
   useEffect(() => () => requestRef.current?.abort(), [])
-  const faq = useApi<List<Faq>>("/faqs?limit=100")
+  const faq = useApi<ChatSuggestion[]>(`/chat/suggestions?locale=${locale}`)
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState("")
-  const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string; sources?: ChatSource[]; mode?: "ai" | "search" }[]>([])
+  const [messages, setMessages] = useState<{ role: "user" | "assistant"; text: string; sources?: ChatSource[]; choices?: string[]; language?: "lo" | "en"; mode?: "search" }[]>([])
   const [hintIndex, setHintIndex] = useState(0)
   const rootRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLButtonElement>(null)
@@ -799,17 +800,24 @@ function DpoChat() {
   const launcherRef = useRef<HTMLButtonElement>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
   const hintRef = useRef<HTMLButtonElement>(null)
-  const questions = faq.data?.data ?? []
+  const followMessages = useRef(true)
+  const scrollMessages = () => {
+    const element = messagesRef.current
+    if (element && followMessages.current) element.scrollTop = element.scrollHeight
+  }
+  const questions = faq.data ?? []
   const hint = questions[hintIndex % (questions.length || 1)]
   const close = () => { setOpen(false); launcherRef.current?.focus({ preventScroll: true }) }
-  const answer = async (question: string, selected?: Faq) => {
+  const answer = async (question: string, selected?: ChatSuggestion) => {
     const text = question.trim()
     if (!text || requestRef.current) return
-    setChatError("")
+    const language = chatLanguage(text)
+    followMessages.current = true
+    setChatError(false)
     setDraft("")
-    setMessages(current => [...current, { role: "user", text }])
+    setMessages(current => [...current, { role: "user", text, language }])
     if (selected) {
-      setMessages(current => [...current, { role: "assistant", text: selected.answer, sources: [{ id: selected.id, title: selected.question, url: paths.faq, excerpt: selected.answer.slice(0, 220) }] }])
+      setMessages(current => [...current, { role: "assistant", text: selected.answer, language: selected.language, sources: [{ id: selected.id, title: selected.question, url: paths.faq, excerpt: selected.answer.slice(0, 220), language: selected.language }] }])
       return
     }
     const controller = new AbortController()
@@ -819,12 +827,12 @@ function DpoChat() {
     try {
       const result = await request<ChatReply>("/chat", {
         method: "POST", headers: { "Content-Type": "application/json" }, signal: controller.signal,
-        body: JSON.stringify({ message: text, locale, history: messages.slice(-6).map(item => ({ role: item.role, text: item.text.slice(0, 2000) })) }),
+        body: JSON.stringify({ message: text, history: messages.slice(-6).map(item => ({ role: item.role, text: item.text.slice(0, 2000), choices: item.choices })) }),
       })
-      setMessages(current => [...current, { role: "assistant", text: result.answer, sources: result.sources, mode: result.mode }])
+      setMessages(current => [...current, { role: "assistant", text: result.answer, language: chatLanguage(result.answer), sources: result.sources, choices: result.choices, mode: result.mode }])
     } catch {
       setDraft(text)
-      setChatError(locale === "en" ? "Could not send your question. Please retry or select a FAQ below." : "ບໍ່ສາມາດສົ່ງຄຳຖາມໄດ້. ກະລຸນາລອງໃໝ່ ຫຼື ເລືອກ FAQ ດ້ານລຸ່ມ.")
+      setChatError(true)
     } finally {
       window.clearTimeout(timer)
       requestRef.current = null
@@ -834,7 +842,7 @@ function DpoChat() {
   useEffect(() => {
     if (open) {
       inputRef.current?.focus({ preventScroll: true })
-      if (messagesRef.current) messagesRef.current.scrollTop = messagesRef.current.scrollHeight
+      scrollMessages()
     }
   }, [open, messages])
   useGSAP(() => {
@@ -867,29 +875,81 @@ function DpoChat() {
       document.removeEventListener("visibilitychange", updatePlayback)
     }
   }, { scope: rootRef, dependencies: [open, questions.length], revertOnUpdate: true })
-  return <div ref={rootRef} className="dpo-chat">
+  return <div ref={rootRef} className="dpo-chat" lang={locale}>
     <button ref={overlayRef} type="button" className="dpo-chat-overlay" tabIndex={-1} aria-hidden="true" disabled={!open} onClick={close} />
-    <section ref={panelRef} id="dpo-chat-panel" className="dpo-chat-panel" aria-label="ສອບຖາມ ສປງ" aria-hidden={!open} inert={!open} onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); close() } }}>
-      <header className="dpo-chat-header"><img src="/assets/dpo/chat-logo.png" alt="" /><div><strong>ສອບຖາມ ສປງ</strong><span>{locale === "en" ? "Answers from the DPO website" : "ຄຳຕອບຈາກຂໍ້ມູນເວັບ DPO"}</span></div><button type="button" onClick={close} aria-label="ປິດ"><FontAwesomeIcon icon={faXmark} /></button></header>
-      <div ref={messagesRef} className="dpo-chat-messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="ປະຫວັດການສົນທະນາ">
-        <div className="dpo-chat-message assistant"><p>ສະບາຍດີ! ຖາມກ່ຽວກັບ ສປງ, ໜ້າທີ່, ຂ່າວສານ ຫຼື ການຕິດຕໍ່ໄດ້. ຄຳຕອບຈະມີແຫຼ່ງຂໍ້ມູນໃຫ້ກວດສອບ.</p></div>
-        {messages.map((message, index) => <div key={index} className={`dpo-chat-message ${message.role}`}><p className="api-prose">{message.text}</p>{message.mode && <small className="dpo-chat-mode">{message.mode === "ai" ? "AI · DPO" : locale === "en" ? "Website search · AI unavailable" : "ຄົ້ນຫາເວັບ · AI ບໍ່ພ້ອມ"}</small>}{!!message.sources?.length && <div className="dpo-chat-sources"><strong>{locale === "en" ? "Sources" : "ແຫຼ່ງຂໍ້ມູນ"}</strong>{message.sources.map(source => <div key={source.id}><Link to={source.url} onClick={() => setOpen(false)}>{source.title} ↗</Link><details><summary>{locale === "en" ? "View source excerpt" : "ເບິ່ງຂໍ້ຄວາມອ້າງອີງ"}</summary><p>{source.excerpt}</p></details></div>)}</div>}</div>)}
-        {pending && <p role="status">{locale === "en" ? "Finding an answer…" : "ກຳລັງຄົ້ນຫາຄຳຕອບ..."}</p>}
-        {chatError && <p role="alert">{chatError}</p>}
+    <section ref={panelRef} id="dpo-chat-panel" className="dpo-chat-panel" aria-label={copy.title} aria-hidden={!open} inert={!open} onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); close() } }}>
+      <header className="dpo-chat-header"><img src={mediaUrl("/api/assets/dpo/chat-logo.png")} alt="" /><div><strong>{copy.title}</strong><span>{copy.subtitle}</span></div><button type="button" onClick={close} aria-label={copy.close}><FontAwesomeIcon icon={faXmark} /></button></header>
+      <div ref={messagesRef} onScroll={event => { const element = event.currentTarget; followMessages.current = element.scrollHeight - element.clientHeight - element.scrollTop < 48 }} className="dpo-chat-messages" role="log" aria-live="polite" aria-relevant="additions" aria-label={copy.history}>
+        <div className="dpo-chat-message assistant"><p>{copy.greeting}</p></div>
+        {messages.map((message, index) => <div key={index} className={`dpo-chat-message ${message.role}`}>{message.role === "assistant" ? <TypedAnswer text={message.text} language={message.language} onProgress={scrollMessages} /> : <p className="api-prose" lang={message.language}>{message.text}</p>}{!!message.choices?.length && <div className="dpo-chat-choices" role="group" aria-label="ເລືອກຫົວຂໍ້">{message.choices.map((choice, choiceIndex) => <button type="button" className="dpo-chat-choice" key={choice} lang={chatLanguage(choice)} disabled={pending} onClick={() => answer(choice)}>{choiceIndex + 1}. {choice}</button>)}</div>}{message.mode && <small className="dpo-chat-mode">{copy.search}</small>}{!!message.sources?.length && <div className="dpo-chat-sources"><strong>{copy.sources}</strong>{message.sources.map(source => <div key={source.id}>{message.language === "en" && source.language === "lo" && <small lang="en">{chatCopy.en.laoSource}</small>}<Link to={mediaUrl(source.url)} onClick={() => setOpen(false)}>{source.title} ↗</Link><details><summary>{copy.excerpt}</summary><p lang={source.language}>{source.excerpt}</p></details></div>)}</div>}</div>)}
+        {pending && <ChatThinking label={copy.pending} />}
+        {chatError && <p role="alert">{copy.error}</p>}
       </div>
+      {faq.loading && <p className="dpo-chat-notice" role="status">{copy.suggestionsLoading}</p>}{faq.error && <p className="dpo-chat-notice" role="status">{copy.suggestionsError}</p>}
       <div className="dpo-chat-suggestions">{questions.map(item => <button type="button" key={item.id} disabled={pending} onClick={() => answer(item.question, item)}>{item.question}</button>)}</div>
-      <p className="dpo-chat-notice">{locale === "en" ? "Questions and recent messages may be sent to Google AI. Do not share personal or account details. " : "ຄຳຖາມ ແລະ ຂໍ້ຄວາມລ່າສຸດອາດຖືກສົ່ງໃຫ້ Google AI. ບໍ່ຄວນສົ່ງຂໍ້ມູນສ່ວນຕົວ ຫຼື ບັນຊີ. "}<Link to={paths.contact} onClick={() => setOpen(false)}>ຕິດຕໍ່ ສປງ →</Link></p>
+      <p className="dpo-chat-notice">{copy.notice}<Link to={paths.contact} onClick={() => setOpen(false)}>{copy.contact}</Link></p>
       <form className="dpo-chat-form" onSubmit={event => { event.preventDefault(); answer(draft) }}>
-        <input ref={inputRef} value={draft} onChange={event => setDraft(event.target.value)} maxLength={500} placeholder="ພິມຄຳຖາມຂອງທ່ານ..." aria-label="ຄຳຖາມຂອງທ່ານ" disabled={pending} />
-        <button type="submit" disabled={!draft.trim() || pending} aria-label="ສົ່ງຄຳຖາມ"><FontAwesomeIcon icon={faPaperPlane} /></button>
+        <input ref={inputRef} value={draft} onChange={event => setDraft(event.target.value)} maxLength={500} placeholder={copy.placeholder} aria-label={copy.question} disabled={pending} />
+        <button type="submit" disabled={!draft.trim() || pending} aria-label={copy.send}><FontAwesomeIcon icon={faPaperPlane} /></button>
       </form>
     </section>
-    {!open && hint && <button ref={hintRef} type="button" className="dpo-chat-hint" onClick={() => { answer(hint.question, hint); setOpen(true) }}><span className="dpo-chat-hint-label">ຄຳຖາມແນະນຳ</span><span className="dpo-chat-hint-question">{hint.question}</span><span className="dpo-chat-hint-action">ເບິ່ງຄຳຕອບ <span aria-hidden="true">→</span></span></button>}
-    <button ref={launcherRef} className="dpo-chat-launcher" type="button" onClick={() => setOpen(current => !current)} aria-controls="dpo-chat-panel" aria-expanded={open} aria-label={open ? "ປິດການສົນທະນາ" : "ເປີດການສົນທະນາ"}><img src="/assets/dpo/chat-logo.png" alt="" /></button>
+    {!open && hint && <button ref={hintRef} type="button" className="dpo-chat-hint" onClick={() => { answer(hint.question, hint); setOpen(true) }}><span className="dpo-chat-hint-label">{copy.suggestion}</span><span className="dpo-chat-hint-question">{hint.question}</span><span className="dpo-chat-hint-action">{copy.viewAnswer} <span aria-hidden="true">→</span></span></button>}
+    <button ref={launcherRef} className="dpo-chat-launcher" type="button" onClick={() => setOpen(current => !current)} aria-controls="dpo-chat-panel" aria-expanded={open} aria-label={open ? copy.closeChat : copy.openChat}><img src={mediaUrl("/api/assets/dpo/chat-logo.png")} alt="" /></button>
   </div>
 }
 export default function App() {
-  const [location, setLocation] = useState(() => ({ path: decodeURI(window.location.pathname).replace(/\/?$/, "/"), search: window.location.search }))
-  useEffect(() => { const update = () => setLocation({ path: decodeURI(window.location.pathname).replace(/\/?$/, "/"), search: window.location.search }); window.addEventListener("popstate", update); return () => window.removeEventListener("popstate", update) }, [])
-  return <><Header path={location.path} /><main id="main-content"><AppPage key={`${location.path}${location.search}`} path={location.path} /></main><Footer /><SocialRail /><DpoChat /></>
+  const readLocation = () => ({ path: decodeURI(window.location.pathname).replace(/\/?$/, "/"), search: window.location.search })
+  const [location, setLocation] = useState(readLocation)
+  const currentLocation = useRef(location)
+  const navigationType = useRef<"initial" | "push" | "pop">("initial")
+  const mainRef = useRef<HTMLElement>(null)
+
+  useGSAP((_, contextSafe) => {
+    if (!contextSafe) return
+    const update = contextSafe((event: Event) => {
+      const main = mainRef.current
+      if (!main) return
+      const next = readLocation()
+      gsap.killTweensOf(main)
+      if (next.path === currentLocation.current.path && next.search === currentLocation.current.search) {
+        main.inert = false
+        gsap.to(main, { opacity: 1, y: 0, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 0.15, clearProps: "opacity,transform,willChange", overwrite: true })
+        return
+      }
+      const commit = () => {
+        currentLocation.current = next
+        navigationType.current = event.type === "dpo:navigate" ? "push" : "pop"
+        setLocation(next)
+      }
+      if (event.type === "popstate" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        commit()
+      } else {
+        main.inert = true
+        gsap.set(main, { willChange: "transform,opacity" })
+        gsap.to(main, { opacity: 1, y: -4, duration: 0.08, ease: "power1.in", overwrite: true, onComplete: commit })
+      }
+    })
+    window.addEventListener("dpo:navigate", update)
+    window.addEventListener("popstate", update)
+    return () => {
+      window.removeEventListener("dpo:navigate", update)
+      window.removeEventListener("popstate", update)
+      if (mainRef.current) mainRef.current.inert = false
+    }
+  }, { scope: mainRef })
+
+  useGSAP(() => {
+    const main = mainRef.current
+    if (!main || navigationType.current === "initial") return
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (navigationType.current === "push") window.scrollTo({ top: 0, behavior: "instant" })
+    main.inert = false
+    if (!document.activeElement?.closest(".dpo-chat")) main.focus({ preventScroll: true })
+    gsap.fromTo(main, { opacity: 1, y: reduced ? 0 : 10, willChange: reduced ? "auto" : "transform,opacity" }, {
+      opacity: 1, y: 0, duration: reduced ? 0 : 0.38, ease: "power3.out",
+      overwrite: true, clearProps: "opacity,transform,willChange",
+    })
+  }, { scope: mainRef, dependencies: [location.path, location.search], revertOnUpdate: true })
+
+  return <><Header path={location.path} /><main ref={mainRef} id="main-content" tabIndex={-1}><AppPage key={`${location.path}${location.search}`} path={location.path} /></main><Footer /><SocialRail /><DpoChat /></>
 }

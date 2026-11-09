@@ -19,3 +19,7 @@ export function findFaqs(message: string, faqs: Faq[]): Faq[] {
     return { faq, score }
   }).filter(item => item.score >= 0.45).sort((a, b) => b.score - a.score).slice(0, 3).map(item => item.faq)
 }
+
+export function chatLanguage(message: string): "lo" | "en" {
+  return /[\u0e80-\u0eff]/u.test(message) ? "lo" : "en"
+}
